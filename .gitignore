@@ -1,0 +1,9 @@
+# container data volumes
+/mysql
+/minio
+/qdrant
+/ollama
+/whisper
+
+# environment
+.env

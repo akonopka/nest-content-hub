@@ -1,0 +1,142 @@
+name: nest-content-hub
+services:
+  init:
+    container_name: nest-content-hub-init
+    build:
+      context: ./docker/node
+      args:
+        NODE_VERSION: "${NODE_VERSION:-26.8.2-trixie}"
+    command: ["sh", "-c", "npm install"]
+    volumes:
+      - ./api:/usr/src/app
+
+  api:
+    container_name: nest-content-hub-api
+    build:
+      context: ./docker/node
+      args:
+        NODE_VERSION: "${NODE_VERSION:-26.8.2-trixie}"
+    command: ["sh", "-c", "npm run start:dev"]
+    restart: always
+    volumes:
+      - ./api:/usr/src/app
+    ports:
+      - "${API_PORT:-3000}:3000"
+    depends_on:
+      init:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+
+  worker:
+    container_name: nest-content-hub-worker
+    build:
+      context: ./docker/node
+    restart: always
+    volumes:
+      - ./api:/usr/src/app
+    depends_on:
+      init:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      mailhog:
+        condition: service_started
+
+    command: ["npm", "run", "start:worker:dev"]
+
+  mysql:
+    container_name: nest-content-hub-mysql
+    image: "mysql:${MYSQL_VERSION:-8.4.11}"
+    restart: always
+    environment:
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-nest_content_hub}"
+      MYSQL_USER: "${MYSQL_USER:-user}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:-password}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-root_password}"
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - ./mysql:/var/lib/mysql
+  minio:
+    container_name: nest-content-hub-minio
+    image: "minio/minio:${MINIO_VERSION:-RELEASE.2025-09-07T16-13-09Z}"
+    command: server /data --console-address ":9001"
+    restart: always
+    environment:
+      MINIO_ROOT_USER: "${MINIO_ROOT_USER:-minioadmin}"
+      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:-minioadmin}"
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - ./minio:/data
+
+  rabbitmq:
+    container_name: nest-content-hub-rabbitmq
+    image: "rabbitmq:${RABBITMQ_VERSION:-3-management}"
+    ports:
+      - "${RABBITMQ_UI_PORT:-15672}:15672"
+      - "${RABBITMQ_AMPQ_PORT:-5672}:5672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: always
+  ollama:
+    container_name: nest-content-hub-ollama
+    build:
+      context: ./docker/ollama
+      args:
+        OLLAMA_VERSION: "${OLLAMA_VERSION:-0.34.0}"
+    environment:
+      OLLAMA_EMBEDD_MODEL: "${OLLAMA_EMBEDD_MODEL:-nomic-embed-text}"
+      OLLAMA_CHAT_MODEL: "${OLLAMA_CHAT_MODEL:-qwen2.5:3b}"
+      OLLAMA_VISION_MODEL: "${OLLAMA_VISION_MODEL:-moondream}"
+    ports:
+      - "${OLLAMA_PORT:-3006}:11434"
+    volumes:
+      - ./ollama/.ollama:/root/.ollama
+    restart: always
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  whisper:
+    container_name: nest-content-hub-whisper
+    image: "hwdsl2/whisper-server"
+    environment:
+      WHISPER_MODEL: "${WHISPER_MODEL:-base}"
+    ports:
+      - "${WHISPER_PORT:-9002}:9000"
+    volumes:
+      - ./whisper:/var/lib/whisper
+    restart: always
+
+  qdrant:
+    container_name: nest-content-hub-qdrant
+    image: "qdrant/qdrant:${QDRANT_VERSION:-v1.19}"
+    ports:
+      - "${QDRANT_REST_PORT:-6333}:6333"
+      - "${QDRANT_GRPC_PORT:-6334}:6334"
+    volumes:
+      - ./qdrant/storage:/qdrant/storage
+    restart: always
+
+  mailhog:
+    container_name: nest-content-hub-mailhog
+    image: "mailhog/mailhog:${MAILHOG_VERSION:-v1.0.1}"
+    ports:
+      - "${MAILHOG_UI_PORT:-8025}:8025"
+      - "${MAILHOG_SMTP_PORT:-1025}:1025"
+    restart: always

@@ -7,3 +7,6 @@
 
 # environment
 .env
+
+# editor
+/.vscode

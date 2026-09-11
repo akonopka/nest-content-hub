@@ -62,6 +62,22 @@ services:
       - "${MYSQL_PORT:-3306}:3306"
     volumes:
       - ./mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root_password}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  adminer:
+    container_name: nest-content-hub-adminer
+    image: "adminer:${ADMINER_VERSION:-6.0.1}"
+    restart: always
+    ports:
+      - "${ADMINER_PORT:-8080}:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
   minio:
     container_name: nest-content-hub-minio
     image: "minio/minio:${MINIO_VERSION:-RELEASE.2025-09-07T16-13-09Z}"

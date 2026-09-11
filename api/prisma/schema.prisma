@@ -4,10 +4,31 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
   provider = "mysql"
+}
+
+enum PostStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+model Post {
+  id           Int        @id @default(autoincrement())
+  content_type String // MIME: "text/plain", "application/pdf", "audio/mpeg", "image/png"
+  status       PostStatus @default(PENDING)
+  content      String?
+  email        String?
+  file_path    String?    @unique
+  created_at   DateTime   @default(now())
+  updated_at   DateTime   @updatedAt
+
+  @@map("posts")
 }

@@ -6,9 +6,17 @@ services:
       context: ./docker/node
       args:
         NODE_VERSION: "${NODE_VERSION:-26.8.2-trixie}"
-    command: ["sh", "-c", "npm install"]
+    command:
+      [
+        "sh",
+        "-c",
+        "npm install && npx prisma generate && npx prisma migrate deploy && npx prisma db seed",
+      ]
     volumes:
       - ./api:/usr/src/app
+    depends_on:
+      mysql:
+        condition: service_healthy
 
   api:
     container_name: nest-content-hub-api
@@ -63,7 +71,17 @@ services:
     volumes:
       - ./mysql:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root_password}"]
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${MYSQL_ROOT_PASSWORD:-root_password}",
+        ]
       interval: 5s
       timeout: 3s
       retries: 10

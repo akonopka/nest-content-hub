@@ -3,7 +3,7 @@ import { WorkerModule } from './worker.module';
 import { Transport, MicroserviceOptions } from '@nestjs/microservices';
 
 async function bootstrap() {
-  let worker = await NestFactory.createMicroservice<MicroserviceOptions>(
+  const worker = await NestFactory.createMicroservice<MicroserviceOptions>(
     WorkerModule,
     {
       transport: Transport.RMQ,

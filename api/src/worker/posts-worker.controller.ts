@@ -1,0 +1,10 @@
+import { Controller } from '@nestjs/common';
+import { EventPattern } from '@nestjs/microservices';
+
+@Controller()
+export class PostsWorkerController {
+  @EventPattern('post.created')
+  handlePostCreated(data: unknown): void {
+    console.log(data);
+  }
+}

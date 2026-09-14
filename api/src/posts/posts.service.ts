@@ -7,6 +7,10 @@ import { PostCreateDto } from './post.dto';
 export class PostsService {
   constructor(private prisma: PrismaService) {}
 
+  async findOne(id: number): Promise<Post | null> {
+    return this.prisma.post.findUnique({ where: { id } });
+  }
+
   async findAll(): Promise<Post[]> {
     return this.prisma.post.findMany();
   }

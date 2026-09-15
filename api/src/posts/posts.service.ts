@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Post } from '../generated/prisma/client';
+import { Post, PostStatus } from '../generated/prisma/client';
 import { PostCreateDto } from './post.dto';
 import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
 
@@ -39,5 +39,20 @@ export class PostsService {
     } as PostCreatedEvent);
 
     return post;
+  }
+
+  async updateStatus(postId: number, status: PostStatus) {
+    await this.prisma.post.update({
+      data: { status },
+      where: { id: postId },
+    });
+  }
+
+  async markFailed(postId: number) {
+    await this.updateStatus(postId, PostStatus.FAILED);
+  }
+
+  async markReady(postId: number) {
+    await this.updateStatus(postId, PostStatus.READY);
   }
 }

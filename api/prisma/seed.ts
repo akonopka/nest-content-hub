@@ -23,7 +23,7 @@ const client = ClientProxyFactory.create({
   transport: Transport.RMQ,
   options: {
     urls: [process.env.RABBITMQ_URL!],
-    queue: 'posts_embedding_queue',
+    queue: process.env.EMBEDDING_QUEUE,
     queueOptions: { durable: false },
   },
 });

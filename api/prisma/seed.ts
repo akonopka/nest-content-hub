@@ -45,7 +45,6 @@ async function main() {
 
   for (const postData of postsData) {
     // await postsService.create(postData);
-
     const post = await prisma.post.create({ data: postData });
     await firstValueFrom(client.emit('post.created', { postId: post.id }));
   }
@@ -54,9 +53,11 @@ async function main() {
 main()
   .then(async () => {
     await prisma.$disconnect();
+    await client.close();
   })
   .catch(async (e) => {
     console.error(e);
     await prisma.$disconnect();
+    await client.close();
     process.exit(1);
   });

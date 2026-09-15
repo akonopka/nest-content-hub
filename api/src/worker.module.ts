@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { PostsWorkerController } from './worker/posts-worker.controller';
+import { PostsModule } from './posts/posts.module';
 
 @Module({
-  imports: [],
+  imports: [PostsModule],
   controllers: [PostsWorkerController],
   providers: [],
 })

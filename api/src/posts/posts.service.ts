@@ -4,6 +4,10 @@ import { Post } from '../generated/prisma/client';
 import { PostCreateDto } from './post.dto';
 import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
 
+export interface PostCreatedEvent {
+  postId: number;
+}
+
 @Injectable()
 export class PostsService {
   constructor(
@@ -32,7 +36,7 @@ export class PostsService {
 
     await this.rabbitMQService.sendToQueue('post.created', {
       postId: post.id,
-    });
+    } as PostCreatedEvent);
 
     return post;
   }

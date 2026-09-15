@@ -29,6 +29,9 @@ const client = ClientProxyFactory.create({
 });
 
 async function main() {
+  const postsCount = await prisma.post.count();
+  if (postsCount > 0) return;
+
   const postsData = [
     {
       content_type: 'text/plain',

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
@@ -7,6 +7,7 @@ import { PostStatus } from '../src/generated/prisma/enums';
 
 describe('Posts (e2e)', () => {
   let app: INestApplication<App>;
+  let server: ReturnType<typeof request>;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -14,39 +15,68 @@ describe('Posts (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(new ValidationPipe());
+
     await app.init();
+
+    server = request(app.getHttpServer());
   });
 
   it('creates a post', async () => {
-    const server = request(app.getHttpServer());
+    const content = 'testowy post e2e';
 
-    const postContent = 'testowy post e2e';
-
-    const postResponse = await server
+    const postsPostResponse = await server
       .post('/posts')
-      .send({ content: postContent })
+      .send({ content })
       .expect(201);
 
-    const postBody = postResponse.body;
+    const postsPostResponseBody = postsPostResponse.body;
 
-    const createdPostId = postBody.id;
+    const createdPostId = postsPostResponseBody.id;
 
     expect(createdPostId).toBeDefined();
-    expect(postBody.content_type).toBe('text/plain');
-    expect(postBody.content).toBe(postContent);
-    expect(postBody.status).toBe(PostStatus.PENDING);
-    expect(postBody.email).toBeNull();
-    expect(postBody.file_path).toBeNull();
-    expect(postBody.created_at).toBeDefined();
-    expect(postBody.updated_at).toBeDefined();
+    expect(postsPostResponseBody.content_type).toBe('text/plain');
+    expect(postsPostResponseBody.content).toBe(content);
+    expect(postsPostResponseBody.status).toBe(PostStatus.PENDING);
+    expect(postsPostResponseBody.email).toBeNull();
+    expect(postsPostResponseBody.file_path).toBeNull();
+    expect(postsPostResponseBody.created_at).toBeDefined();
+    expect(postsPostResponseBody.updated_at).toBeDefined();
 
-    const postsResponse = await server.get('/posts').expect(200);
+    const postsGetResponse = await server.get('/posts').expect(200);
 
-    const postsBody = postsResponse.body;
+    const postsGetBody = postsGetResponse.body;
 
-    expect(postsBody).toContainEqual(
+    expect(postsGetBody).toContainEqual(
       expect.objectContaining({ id: createdPostId }),
     );
+
+    const postsGetSingleResponse = await server
+      .get('/posts/' + createdPostId)
+      .expect(200);
+
+    const postsGetSingleResponseBody = postsGetSingleResponse.body;
+
+    expect(postsGetSingleResponseBody.content).toBe(content);
+  });
+
+  it('creates a post without content', async () => {
+    await server.post('/posts').expect(400);
+  });
+
+  it('creates a post with invalid email', async () => {
+    await server
+      .post('/posts')
+      .send({ email: 'some_invalid_email' })
+      .expect(400);
+  });
+
+  it('gets a post with not existing id', async () => {
+    await server.get('/posts/999999').expect(404);
+  });
+
+  it('gets a post with invalid id', async () => {
+    await server.get('/posts/some_invalid_id').expect(400);
   });
 
   afterEach(async () => {

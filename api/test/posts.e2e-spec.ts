@@ -4,6 +4,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { PostStatus } from '../src/generated/prisma/enums';
+import { RabbitMQService } from '../src/rabbitmq/rabbitmq.service';
 
 describe('Posts (e2e)', () => {
   let app: INestApplication<App>;
@@ -12,7 +13,10 @@ describe('Posts (e2e)', () => {
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(RabbitMQService)
+      .useValue({ sendToQueue: jest.fn() })
+      .compile();
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe());

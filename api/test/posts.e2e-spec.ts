@@ -18,23 +18,35 @@ describe('Posts (e2e)', () => {
   });
 
   it('creates a post', async () => {
-    const content = 'testowy post e2e';
+    const server = request(app.getHttpServer());
 
-    const response = await request(app.getHttpServer())
+    const postContent = 'testowy post e2e';
+
+    const postResponse = await server
       .post('/posts')
-      .send({ content })
+      .send({ content: postContent })
       .expect(201);
 
-    const body = response.body;
+    const postBody = postResponse.body;
 
-    expect(body.id).toBeDefined();
-    expect(body.content_type).toBe('text/plain');
-    expect(body.content).toBe(content);
-    expect(body.status).toBe(PostStatus.PENDING);
-    expect(body.email).toBeNull();
-    expect(body.file_path).toBeNull();
-    expect(body.created_at).toBeDefined();
-    expect(body.updated_at).toBeDefined();
+    const createdPostId = postBody.id;
+
+    expect(createdPostId).toBeDefined();
+    expect(postBody.content_type).toBe('text/plain');
+    expect(postBody.content).toBe(postContent);
+    expect(postBody.status).toBe(PostStatus.PENDING);
+    expect(postBody.email).toBeNull();
+    expect(postBody.file_path).toBeNull();
+    expect(postBody.created_at).toBeDefined();
+    expect(postBody.updated_at).toBeDefined();
+
+    const postsResponse = await server.get('/posts').expect(200);
+
+    const postsBody = postsResponse.body;
+
+    expect(postsBody).toContainEqual(
+      expect.objectContaining({ id: createdPostId }),
+    );
   });
 
   afterEach(async () => {

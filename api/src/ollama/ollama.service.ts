@@ -1,17 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { Ollama } from 'ollama';
+import type { Message, Tool } from 'ollama';
 
 @Injectable()
 export class OllamaService {
   private client = new Ollama({ host: process.env.OLLAMA_URL });
 
-  async chat(question: string): Promise<string> {
+  async chat(messages: Message[], tools?: Tool[]): Promise<Message> {
     const response = await this.client.chat({
       model: process.env.OLLAMA_CHAT_MODEL!,
-      messages: [{ role: 'user', content: question }],
+      messages,
+      tools,
     });
 
-    return response.message.content;
+    return response.message;
   }
   async embed(text: string): Promise<number[]> {
     const response = await this.client.embed({

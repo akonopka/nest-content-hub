@@ -20,10 +20,10 @@ Pełna specyfikacja docelowego zakresu znajduje się w pliku [`Wymagania.md`](Wy
 - `POST /posts` — dodanie treści tekstowej, zapis do MySQL ze statusem `PENDING`
 - `GET /posts`, `GET /posts/:id` — odczyt postów
 - Asynchroniczny worker: po dodaniu posta liczy embedding (Ollama) i zapisuje wektor w Qdrant, zmienia status na `READY` (albo `FAILED` przy błędzie)
-- `POST /ask` — pytanie w naturalnym języku; model (Ollama) może użyć narzędzia `search_content`, żeby semantycznie przeszukać posty (embedding pytania → Qdrant → treść z MySQL) i odpowiedzieć na jej podstawie. Na razie **synchroniczny** (odpowiedź w tym samym żądaniu, bez kolejki/maila) i bez system promptu/fallbacku wymuszającego użycie narzędzia — model sam decyduje, więc nie zawsze konsekwentne
+- `POST /ask` — pytanie w naturalnym języku; narzędzie `search_content` (embedding pytania → Qdrant → treść z MySQL) jest wywoływane zawsze, z pytaniem od modelu jeśli sam o nie poprosił, albo surowym pytaniem użytkownika w przeciwnym razie (deterministyczny fallback) — odpowiedź sklejona przez LLM na podstawie wyniku. Na razie **synchroniczny** (odpowiedź w tym samym żądaniu, bez kolejki/maila)
 - Seed danych startowych przy pierwszym uruchomieniu — dodane posty też przechodzą przez pełny pipeline (kolejka → embedding → Qdrant), tak samo jak posty dodane przez `POST /posts`
 - Dokumentacja OpenAPI pod `/api/docs` + wyeksportowany `api/openapi.json`
-- Testy e2e (`api/test/posts.e2e-spec.ts`) i jednostkowe (`api/src/posts/posts.service.spec.ts`)
+- Testy e2e (`api/test/posts.e2e-spec.ts`, `api/test/ask.e2e-spec.ts`) i jednostkowe (`api/src/posts/posts.service.spec.ts`, `api/src/ask/ask.service.spec.ts`)
 - CI (GitHub Actions): lint, build, testy jednostkowe przy każdym pushu/PR
 
 **Jeszcze nie zaimplementowane** (patrz `Wymagania.md`): pełna, asynchroniczna wersja `/ask` z powiadomieniem mailem, drugie narzędzie agenta (`query_posts`), uploady plików (PDF/audio/obraz), powiadomienia mailem.

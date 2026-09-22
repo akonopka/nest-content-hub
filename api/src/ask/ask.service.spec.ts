@@ -51,4 +51,57 @@ describe('AskService', () => {
 
     expect(result).toBe(response);
   });
+
+  it('asks a question and uses the tool when the model requests it', async () => {
+    const question = 'some question';
+    const toolQuestion = 'refined question from the model';
+    const finalResponse = 'final response';
+    const foundPosts = [{ id: 1, content: 'found post' }];
+
+    const assistantMessageWithToolCall = {
+      role: 'assistant',
+      content: '',
+      tool_calls: [
+        {
+          function: {
+            name: 'search_content',
+            arguments: { question: toolQuestion },
+          },
+        },
+      ],
+    };
+
+    ollamaService.chat
+      .mockResolvedValueOnce(assistantMessageWithToolCall)
+      .mockResolvedValueOnce({ role: 'assistant', content: finalResponse });
+
+    qdrantService.search.mockResolvedValue({
+      points: [{ payload: { post_id: 1 } }],
+    });
+    prismaService.post.findMany.mockResolvedValue(foundPosts);
+
+    const result = await askService.ask({ question });
+
+    expect(result).toBe(finalResponse);
+
+    expect(ollamaService.chat).toHaveBeenNthCalledWith(
+      1,
+      [
+        { role: 'system', content: process.env.ASK_SYSTEM_PROMPT },
+        { role: 'user', content: question },
+      ],
+      [searchContentTool],
+    );
+
+    expect(ollamaService.chat).toHaveBeenNthCalledWith(2, [
+      { role: 'system', content: process.env.ASK_SYSTEM_PROMPT },
+      { role: 'user', content: question },
+      assistantMessageWithToolCall,
+      {
+        role: 'tool',
+        content: JSON.stringify(foundPosts),
+        tool_name: 'search_content',
+      },
+    ]);
+  });
 });

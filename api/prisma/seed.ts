@@ -35,11 +35,13 @@ async function main() {
   const postsData = [
     {
       content_type: 'text/plain',
-      content: 'Pierwszy przykładowy post tekstowy do testowania wyszukiwania.',
+      content:
+        'NestJS to framework do budowy aplikacji Node.js oparty o TypeScript, korzystający z dependency injection i modułowej architektury inspirowanej Angularem.',
     },
     {
       content_type: 'text/plain',
-      content: 'Drugi przykładowy post, o czymś zupełnie innym niż pierwszy.',
+      content:
+        'W NestJS kontrolery obsługują żądania HTTP, serwisy zawierają logikę biznesową, a moduły grupują powiązane ze sobą komponenty.',
     },
   ];
 

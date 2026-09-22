@@ -61,7 +61,7 @@ curl http://localhost:3000/posts/1
 # pytanie do agenta
 curl -X POST http://localhost:3000/ask \
   -H "Content-Type: application/json" \
-  -d '{"question": "Co jest napisane w przykładowym poście do testowania wyszukiwania?"}'
+  -d '{"question": "Z czego korzysta NestJS do zarządzania zależnościami?"}'
 ```
 
 ## Testy

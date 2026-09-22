@@ -41,18 +41,18 @@ export class PostsService {
     return post;
   }
 
-  async updateStatus(postId: number, status: PostStatus) {
+  async updateStatus(postId: number, status: PostStatus): Promise<void> {
     await this.prisma.post.update({
       data: { status },
       where: { id: postId },
     });
   }
 
-  async markFailed(postId: number) {
+  async markFailed(postId: number): Promise<void> {
     await this.updateStatus(postId, PostStatus.FAILED);
   }
 
-  async markReady(postId: number) {
+  async markReady(postId: number): Promise<void> {
     await this.updateStatus(postId, PostStatus.READY);
   }
 }

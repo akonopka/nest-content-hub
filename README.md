@@ -31,7 +31,6 @@ Pełna specyfikacja docelowego zakresu znajduje się w pliku [`Wymagania.md`](Wy
 
 ```bash
 cp .env.example .env
-cp api/.env.example api/.env
 docker compose up -d
 ```
 

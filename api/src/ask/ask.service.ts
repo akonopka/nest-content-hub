@@ -16,7 +16,10 @@ export class AskService {
   ) {}
 
   async ask(data: AskDto): Promise<string> {
-    const messages: Message[] = [{ role: 'user', content: data.question }];
+    const messages: Message[] = [
+      { role: 'system', content: process.env.ASK_SYSTEM_PROMPT! },
+      { role: 'user', content: data.question },
+    ];
     const message = await this.ollamaService.chat(messages, [
       searchContentTool,
     ]);

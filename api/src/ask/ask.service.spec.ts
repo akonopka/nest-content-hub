@@ -42,7 +42,10 @@ describe('AskService', () => {
 
     const result = await askService.ask({ question });
     expect(ollamaService.chat).toHaveBeenCalledWith(
-      [{ role: 'user', content: question }],
+      [
+        { role: 'system', content: process.env.ASK_SYSTEM_PROMPT },
+        { role: 'user', content: question },
+      ],
       [searchContentTool],
     );
 

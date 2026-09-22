@@ -7,7 +7,8 @@ export class AskController {
   constructor(private askService: AskService) {}
 
   @Post()
-  ask(@Body() dto: AskDto): void {
-    this.askService.ask(dto);
+  async ask(@Body() dto: AskDto): Promise<{ response: string }> {
+    const response = await this.askService.ask(dto);
+    return { response };
   }
 }

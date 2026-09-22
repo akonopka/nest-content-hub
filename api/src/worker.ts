@@ -21,7 +21,7 @@ async function bootstrap() {
   const client = new QdrantClient({ url: process.env.QDRANT_URL! });
   try {
     await client.getCollection(process.env.POSTS_COLLECTION!);
-  } catch (exception) {
+  } catch {
     await client.createCollection(process.env.POSTS_COLLECTION!, {
       vectors: {
         size: Number(process.env.POSTS_COLLECTION_SIZE!),

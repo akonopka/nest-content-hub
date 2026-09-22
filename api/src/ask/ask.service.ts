@@ -21,22 +21,28 @@ export class AskService {
       searchContentTool,
     ]);
 
+    let question: string;
+
     if (!message.tool_calls || message.tool_calls.length === 0) {
-      return message.content;
+      question = data.question;
+    } else {
+      const toolCall = message.tool_calls[0];
+      question = toolCall.function.arguments.question as string;
     }
 
-    const toolCall = message.tool_calls[0];
-    const question = toolCall.function.arguments.question as string;
     const posts = await this.searchContent(question);
 
-    messages.push(message);
-    messages.push({
-      role: 'tool',
-      content: JSON.stringify(posts),
-      tool_name: 'search_content',
-    });
+    const fullMessages = [
+      ...messages,
+      message,
+      {
+        role: 'tool',
+        content: JSON.stringify(posts),
+        tool_name: 'search_content',
+      },
+    ];
 
-    const finalMessage = await this.ollamaService.chat(messages);
+    const finalMessage = await this.ollamaService.chat(fullMessages);
 
     return finalMessage.content;
   }

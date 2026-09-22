@@ -7,17 +7,21 @@ import { searchContentTool } from './ask.tools';
 
 describe('AskService', () => {
   let askService: AskService;
-  let ollamaService: { chat: jest.Mock };
+  let ollamaService: { chat: jest.Mock; embed: jest.Mock };
+  let qdrantService: { search: jest.Mock };
+  let prismaService: { post: { findMany: jest.Mock } };
 
   beforeEach(async () => {
-    ollamaService = { chat: jest.fn() };
+    ollamaService = { chat: jest.fn(), embed: jest.fn() };
+    qdrantService = { search: jest.fn() };
+    prismaService = { post: { findMany: jest.fn() } };
 
     const testingModule: TestingModule = await Test.createTestingModule({
       providers: [
         AskService,
         { provide: OllamaService, useValue: ollamaService },
-        { provide: QdrantService, useValue: {} },
-        { provide: PrismaService, useValue: {} },
+        { provide: QdrantService, useValue: qdrantService },
+        { provide: PrismaService, useValue: prismaService },
       ],
     }).compile();
 
@@ -32,6 +36,9 @@ describe('AskService', () => {
       role: 'assistant',
       content: response,
     });
+
+    qdrantService.search.mockResolvedValue({ points: [] });
+    prismaService.post.findMany.mockResolvedValue([]);
 
     const result = await askService.ask({ question });
     expect(ollamaService.chat).toHaveBeenCalledWith(

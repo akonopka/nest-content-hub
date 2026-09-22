@@ -1,5 +1,7 @@
 # nest-content-hub
 
+![CI](https://github.com/akonopka/nest-content-hub/actions/workflows/ci.yml/badge.svg)
+
 Content hub z asystentem AI: przyjmuje treści, liczy dla nich embeddingi lokalnym modelem (Ollama) i zapisuje je w bazie wektorowej (Qdrant), żeby można było je potem przeszukiwać semantycznie.
 
 Pełna specyfikacja docelowego zakresu znajduje się w pliku [`Wymagania.md`](Wymagania.md). Bieżący plik opisuje **stan faktyczny** projektu — co już działa.
@@ -20,7 +22,8 @@ Pełna specyfikacja docelowego zakresu znajduje się w pliku [`Wymagania.md`](Wy
 - Asynchroniczny worker: po dodaniu posta liczy embedding (Ollama) i zapisuje wektor w Qdrant, zmienia status na `READY` (albo `FAILED` przy błędzie)
 - Seed danych startowych przy pierwszym uruchomieniu — dodane posty też przechodzą przez pełny pipeline (kolejka → embedding → Qdrant), tak samo jak posty dodane przez `POST /posts`
 - Dokumentacja OpenAPI pod `/api/docs` + wyeksportowany `api/openapi.json`
-- Testy e2e dla `/posts` (`api/test/posts.e2e-spec.ts`)
+- Testy e2e (`api/test/posts.e2e-spec.ts`) i jednostkowe (`api/src/posts/posts.service.spec.ts`)
+- CI (GitHub Actions): lint, build, testy jednostkowe przy każdym pushu/PR
 
 **Jeszcze nie zaimplementowane** (patrz `Wymagania.md`): `/ask` (agent AI), uploady plików (PDF/audio/obraz), powiadomienia mailem.
 
@@ -59,5 +62,9 @@ curl http://localhost:3000/posts/1
 ## Testy
 
 ```bash
+# jednostkowe (szybkie, bez zależności od Dockera)
+docker compose exec api sh -c "npm run test:unit"
+
+# e2e (wymagają uruchomionego docker compose)
 docker compose exec api sh -c "npm run test:e2e"
 ```

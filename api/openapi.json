@@ -59,6 +59,30 @@
           "Posts"
         ]
       }
+    },
+    "/ask": {
+      "post": {
+        "operationId": "AskController_ask",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Ask"
+        ]
+      }
     }
   },
   "info": {
@@ -72,6 +96,10 @@
   "components": {
     "schemas": {
       "PostCreateDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AskDto": {
         "type": "object",
         "properties": {}
       }

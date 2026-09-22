@@ -1,6 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AskService } from './ask.service';
 import { OllamaService } from '../ollama/ollama.service';
+import { QdrantService } from '../qdrant/qdrant.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { searchContentTool } from './ask.tools';
 
 describe('AskService', () => {
   let askService: AskService;
@@ -13,6 +16,8 @@ describe('AskService', () => {
       providers: [
         AskService,
         { provide: OllamaService, useValue: ollamaService },
+        { provide: QdrantService, useValue: {} },
+        { provide: PrismaService, useValue: {} },
       ],
     }).compile();
 
@@ -23,10 +28,16 @@ describe('AskService', () => {
     const question = 'some question';
     const response = 'some response';
 
-    ollamaService.chat.mockResolvedValue(response);
+    ollamaService.chat.mockResolvedValue({
+      role: 'assistant',
+      content: response,
+    });
 
     const result = await askService.ask({ question });
-    expect(ollamaService.chat).toHaveBeenCalledWith(question);
+    expect(ollamaService.chat).toHaveBeenCalledWith(
+      [{ role: 'user', content: question }],
+      [searchContentTool],
+    );
 
     expect(result).toBe(response);
   });

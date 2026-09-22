@@ -32,7 +32,10 @@ describe('Ask (e2e)', () => {
     const question = 'some question';
     const expectedModelResponse = 'some response';
 
-    ollamaService.chat.mockResolvedValue(expectedModelResponse);
+    ollamaService.chat.mockResolvedValue({
+      role: 'assistant',
+      content: expectedModelResponse,
+    });
 
     const httpResponse = await server
       .post('/ask')

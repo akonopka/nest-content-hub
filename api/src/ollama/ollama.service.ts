@@ -11,6 +11,7 @@ export class OllamaService {
       model: process.env.OLLAMA_CHAT_MODEL!,
       messages,
       tools,
+      options: { temperature: Number(process.env.OLLAMA_TEMPERATURE!) },
     });
 
     return response.message;

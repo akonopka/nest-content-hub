@@ -16,6 +16,7 @@
     "start:worker:dev": "nest start --watch --entryFile worker",
     "lint": "oxlint src/ test/",
     "test": "jest",
+    "test:unit": "jest --testPathIgnorePatterns=\\.e2e-spec\\.ts$",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",

@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { WorkerModule } from './worker.module';
 import { Transport, MicroserviceOptions } from '@nestjs/microservices';
-import { QdrantClient } from '@qdrant/js-client-rest';
+import { QdrantService } from './qdrant/qdrant.service';
 
 async function bootstrap() {
   const worker = await NestFactory.createMicroservice<MicroserviceOptions>(
@@ -18,11 +18,11 @@ async function bootstrap() {
     },
   );
 
-  const client = new QdrantClient({ url: process.env.QDRANT_URL! });
+  const qdrantService = worker.get(QdrantService);
   try {
-    await client.getCollection(process.env.POSTS_COLLECTION!);
+    await qdrantService.getCollection(process.env.POSTS_COLLECTION!);
   } catch {
-    await client.createCollection(process.env.POSTS_COLLECTION!, {
+    await qdrantService.createCollection(process.env.POSTS_COLLECTION!, {
       vectors: {
         size: Number(process.env.POSTS_COLLECTION_SIZE!),
         distance: 'Cosine',

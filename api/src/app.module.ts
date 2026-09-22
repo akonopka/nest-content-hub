@@ -4,8 +4,16 @@ import { PostsModule } from './posts/posts.module';
 import { AskModule } from './ask/ask.module';
 import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
 import { OllamaModule } from './ollama/ollama.module';
+import { QdrantModule } from './qdrant/qdrant.module';
 
 @Module({
-  imports: [PostsModule, AskModule, OllamaModule, PrismaModule, RabbitMQModule],
+  imports: [
+    PostsModule,
+    AskModule,
+    OllamaModule,
+    PrismaModule,
+    RabbitMQModule,
+    QdrantModule,
+  ],
 })
 export class AppModule {}

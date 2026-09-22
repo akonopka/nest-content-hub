@@ -1,18 +1,22 @@
 import { Controller } from '@nestjs/common';
 import { EventPattern } from '@nestjs/microservices';
 import { type PostCreatedEvent, PostsService } from '../posts/posts.service';
-import { Ollama } from 'ollama';
-import { QdrantClient } from '@qdrant/js-client-rest';
 import {
   EmbeddingModel,
   EmbeddingProvider,
   PostContentType,
   PostPayload,
 } from './post-payload.interface';
+import { OllamaService } from '../ollama/ollama.service';
+import { QdrantService } from '../qdrant/qdrant.service';
 
 @Controller()
 export class PostsWorkerController {
-  constructor(private readonly postService: PostsService) {}
+  constructor(
+    private readonly postService: PostsService,
+    private readonly ollamaService: OllamaService,
+    private readonly qdrantService: QdrantService,
+  ) {}
 
   @EventPattern('post.created')
   async handlePostCreated(data: PostCreatedEvent): Promise<void> {
@@ -41,15 +45,7 @@ export class PostsWorkerController {
         );
       }
 
-      const ollama = new Ollama({ host: process.env.OLLAMA_URL });
-      const client = new QdrantClient({ url: process.env.QDRANT_URL! });
-
-      const response = await ollama.embed({
-        model: process.env.OLLAMA_EMBEDD_MODEL!,
-        input: post.content,
-      });
-
-      const vector = response.embeddings[0];
+      const vector = await this.ollamaService.embed(post.content);
 
       const payload: PostPayload = {
         post_id: postId,
@@ -61,7 +57,7 @@ export class PostsWorkerController {
         },
       };
 
-      await client.upsert(process.env.POSTS_COLLECTION!, {
+      await this.qdrantService.upsert(process.env.POSTS_COLLECTION!, {
         points: [
           {
             id: postId,

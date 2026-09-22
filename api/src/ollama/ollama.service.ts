@@ -13,4 +13,12 @@ export class OllamaService {
 
     return response.message.content;
   }
+  async embed(text: string): Promise<number[]> {
+    const response = await this.client.embed({
+      model: process.env.OLLAMA_EMBEDD_MODEL!,
+      input: text,
+    });
+
+    return response.embeddings[0];
+  }
 }

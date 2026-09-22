@@ -16,10 +16,21 @@ export class QdrantService {
     return this.client.createCollection(name, params);
   }
 
-  async upsert(
-    name: string,
-    params: Parameters<QdrantClient['upsert']>[1],
-  ) {
+  async upsert(name: string, params: Parameters<QdrantClient['upsert']>[1]) {
     return this.client.upsert(name, params);
+  }
+
+  async search(
+    name: string,
+    vector: number[],
+    limit: number,
+    scoreThreshold: number,
+  ) {
+    return this.client.query(name, {
+      query: vector,
+      limit,
+      score_threshold: scoreThreshold,
+      with_payload: true,
+    });
   }
 }

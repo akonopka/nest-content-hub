@@ -1,0 +1,12 @@
+-- CreateTable
+CREATE TABLE `questions` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `question` VARCHAR(191) NOT NULL,
+    `email` VARCHAR(191) NOT NULL,
+    `status` ENUM('PENDING', 'PROCESSING', 'READY', 'FAILED') NOT NULL DEFAULT 'PENDING',
+    `answer` VARCHAR(191) NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updated_at` DATETIME(3) NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

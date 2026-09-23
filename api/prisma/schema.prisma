@@ -32,3 +32,22 @@ model Post {
 
   @@map("posts")
 }
+
+model Question {
+  id         Int            @id @default(autoincrement())
+  question   String
+  email      String
+  status     QuestionStatus @default(PENDING)
+  answer     String?
+  created_at DateTime       @default(now())
+  updated_at DateTime       @updatedAt
+
+  @@map("questions")
+}
+
+enum QuestionStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}

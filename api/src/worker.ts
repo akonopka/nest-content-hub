@@ -4,21 +4,29 @@ import { Transport, MicroserviceOptions } from '@nestjs/microservices';
 import { QdrantService } from './qdrant/qdrant.service';
 
 async function bootstrap() {
-  const worker = await NestFactory.createMicroservice<MicroserviceOptions>(
-    WorkerModule,
-    {
-      transport: Transport.RMQ,
-      options: {
-        urls: [process.env.RABBITMQ_URL!],
-        queue: process.env.EMBEDDING_QUEUE!,
-        queueOptions: {
-          durable: false,
-        },
-      },
-    },
-  );
+  const app = await NestFactory.create(WorkerModule);
 
-  const qdrantService = worker.get(QdrantService);
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.RMQ,
+    options: {
+      urls: [process.env.RABBITMQ_URL!],
+      queue: process.env.EMBEDDING_QUEUE!,
+      queueOptions: { durable: false },
+    },
+  });
+
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.RMQ,
+    options: {
+      urls: [process.env.RABBITMQ_URL!],
+      queue: process.env.ASK_QUEUE!,
+      queueOptions: { durable: false },
+    },
+  });
+
+  await app.startAllMicroservices();
+
+  const qdrantService = app.get(QdrantService);
   try {
     await qdrantService.getCollection(process.env.POSTS_COLLECTION!);
   } catch {
@@ -29,7 +37,5 @@ async function bootstrap() {
       },
     });
   }
-
-  await worker.listen();
 }
 bootstrap();

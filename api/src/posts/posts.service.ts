@@ -23,6 +23,10 @@ export class PostsService {
     return this.prismaService.post.findMany();
   }
 
+  async findByIds(ids: number[]): Promise<Post[]> {
+    return this.prismaService.post.findMany({ where: { id: { in: ids } } });
+  }
+
   async create(data: PostCreateDto): Promise<Post> {
     const postData = {
       content: data.content,

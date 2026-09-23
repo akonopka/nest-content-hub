@@ -1,28 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AskService } from './ask.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
+import { QuestionsService } from '../questions/questions.service';
 
 describe('AskService', () => {
   let askService: AskService;
-  let prismaService: {
-    post: { findMany: jest.Mock };
-    question: { create: jest.Mock };
+  let questionsService: {
+    create: jest.Mock;
   };
-  let rabbitMQService: { sendToAskQueue: jest.Mock };
 
   beforeEach(async () => {
-    prismaService = {
-      post: { findMany: jest.fn() },
-      question: { create: jest.fn() },
+    questionsService = {
+      create: jest.fn(),
     };
-    rabbitMQService = { sendToAskQueue: jest.fn() };
 
     const testingModule: TestingModule = await Test.createTestingModule({
       providers: [
         AskService,
-        { provide: PrismaService, useValue: prismaService },
-        { provide: RabbitMQService, useValue: rabbitMQService },
+        { provide: QuestionsService, useValue: questionsService },
       ],
     }).compile();
 
@@ -36,26 +30,17 @@ describe('AskService', () => {
       email: 'someone@example.com',
     };
 
-    prismaService.question.create.mockResolvedValue(createdQuestion);
+    questionsService.create.mockResolvedValue(createdQuestion);
 
     const result = await askService.ask({
       question: createdQuestion.question,
       email: createdQuestion.email,
     });
 
-    expect(prismaService.question.create).toHaveBeenCalledWith({
-      data: {
-        question: createdQuestion.question,
-        email: createdQuestion.email,
-      },
+    expect(questionsService.create).toHaveBeenCalledWith({
+      question: createdQuestion.question,
+      email: createdQuestion.email,
     });
-
-    expect(rabbitMQService.sendToAskQueue).toHaveBeenCalledWith(
-      'question.asked',
-      {
-        questionId: createdQuestion.id,
-      },
-    );
 
     expect(result).toEqual(createdQuestion);
   });

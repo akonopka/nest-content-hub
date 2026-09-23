@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { AskDto } from './ask.dto';
-import { PrismaService } from '../prisma/prisma.service';
+import { QuestionsService } from '../questions/questions.service';
 import { Question } from '../generated/prisma/client';
-import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
+import { QuestionCreateDto } from '../questions/question.dto';
 
 export interface QuestionAskedEvent {
   questionId: number;
@@ -10,25 +9,10 @@ export interface QuestionAskedEvent {
 
 @Injectable()
 export class AskService {
-  constructor(
-    private readonly prismaService: PrismaService,
-    private rabbitMQService: RabbitMQService,
-  ) {}
+  constructor(private readonly questionsService: QuestionsService) {}
 
-  async ask(data: AskDto): Promise<Question> {
-    const questionData = {
-      question: data.question,
-      email: data.email,
-    };
-
-    const question = await this.prismaService.question.create({
-      data: questionData,
-    });
-
-    await this.rabbitMQService.sendToAskQueue('question.asked', {
-      questionId: question.id,
-    } as QuestionAskedEvent);
-
+  async ask(data: QuestionCreateDto): Promise<Question> {
+    const question = await this.questionsService.create(data);
     return question;
   }
 }

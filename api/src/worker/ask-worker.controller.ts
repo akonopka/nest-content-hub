@@ -19,7 +19,7 @@ export class AskWorkerController {
   ) {}
 
   @EventPattern('question.asked')
-  async handleQuestionAsked(data: QuestionAskedEvent): Promise<string> {
+  async handleQuestionAsked(data: QuestionAskedEvent): Promise<void> {
     const questionId = data.questionId;
     const questionObj = await this.questionsService.findOne(questionId);
 
@@ -61,8 +61,7 @@ export class AskWorkerController {
       },
     ];
     const finalMessage = await this.ollamaService.chat(fullMessages);
-
-    return finalMessage.content;
+    console.log(finalMessage);
   }
 
   async searchContent(question: string): Promise<Post[]> {

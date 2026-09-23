@@ -15,7 +15,7 @@ describe('Posts (e2e)', () => {
       imports: [AppModule],
     })
       .overrideProvider(RabbitMQService)
-      .useValue({ sendToQueue: jest.fn() })
+      .useValue({ sendToEmbeddingQueue: jest.fn() })
       .compile();
 
     app = moduleFixture.createNestApplication();

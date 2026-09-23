@@ -6,23 +6,23 @@ import { PostStatus } from '../generated/prisma/enums';
 
 describe('PostsService', () => {
   let postsService: PostsService;
-  let prisma: {
+  let prismaService: {
     post: { create: jest.Mock; findUnique: jest.Mock; update: jest.Mock };
   };
-  let rabbitMQ: { sendToEmbeddingQueue: jest.Mock };
+  let rabbitMQService: { sendToEmbeddingQueue: jest.Mock };
 
   beforeEach(async () => {
-    prisma = {
+    prismaService = {
       post: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
     };
-    rabbitMQ = { sendToEmbeddingQueue: jest.fn() };
+    rabbitMQService = { sendToEmbeddingQueue: jest.fn() };
 
     const testingModule: TestingModule = await Test.createTestingModule({
       providers: [
         PostsService,
         // { provide: PostsService, useClass: PostsService },
-        { provide: PrismaService, useValue: prisma },
-        { provide: RabbitMQService, useValue: rabbitMQ },
+        { provide: PrismaService, useValue: prismaService },
+        { provide: RabbitMQService, useValue: rabbitMQService },
       ],
     }).compile();
 
@@ -32,11 +32,11 @@ describe('PostsService', () => {
   it('returns a post by id', async () => {
     const postId = 1;
     const foundPost = { id: postId, content: 'test', email: null };
-    prisma.post.findUnique.mockResolvedValue(foundPost);
+    prismaService.post.findUnique.mockResolvedValue(foundPost);
 
     const result = await postsService.findOne(postId);
 
-    expect(prisma.post.findUnique).toHaveBeenCalledWith({
+    expect(prismaService.post.findUnique).toHaveBeenCalledWith({
       where: { id: postId },
     });
 
@@ -45,16 +45,19 @@ describe('PostsService', () => {
 
   it('creates a post and emits an event to the queue', async () => {
     const createdPost = { id: 1, content: 'test', email: null };
-    prisma.post.create.mockResolvedValue(createdPost);
+    prismaService.post.create.mockResolvedValue(createdPost);
 
     const result = await postsService.create({ content: 'test' });
 
-    expect(prisma.post.create).toHaveBeenCalledWith({
+    expect(prismaService.post.create).toHaveBeenCalledWith({
       data: { content: 'test', email: undefined, content_type: 'text/plain' },
     });
-    expect(rabbitMQ.sendToEmbeddingQueue).toHaveBeenCalledWith('post.created', {
-      postId: 1,
-    });
+    expect(rabbitMQService.sendToEmbeddingQueue).toHaveBeenCalledWith(
+      'post.created',
+      {
+        postId: 1,
+      },
+    );
     expect(result).toBe(createdPost);
   });
 
@@ -63,7 +66,7 @@ describe('PostsService', () => {
 
     await postsService.markReady(postId);
 
-    expect(prisma.post.update).toHaveBeenCalledWith({
+    expect(prismaService.post.update).toHaveBeenCalledWith({
       data: { status: PostStatus.READY },
       where: { id: postId },
     });

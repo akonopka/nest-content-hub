@@ -11,16 +11,16 @@ export interface PostCreatedEvent {
 @Injectable()
 export class PostsService {
   constructor(
-    private prisma: PrismaService,
+    private prismaService: PrismaService,
     private rabbitMQService: RabbitMQService,
   ) {}
 
   async findOne(id: number): Promise<Post | null> {
-    return this.prisma.post.findUnique({ where: { id } });
+    return this.prismaService.post.findUnique({ where: { id } });
   }
 
   async findAll(): Promise<Post[]> {
-    return this.prisma.post.findMany();
+    return this.prismaService.post.findMany();
   }
 
   async create(data: PostCreateDto): Promise<Post> {
@@ -30,11 +30,11 @@ export class PostsService {
       content_type: 'text/plain',
     };
 
-    const post = await this.prisma.post.create({
+    const post = await this.prismaService.post.create({
       data: postData,
     });
 
-    await this.rabbitMQService.sendToQueue('post.created', {
+    await this.rabbitMQService.sendToEmbeddingQueue('post.created', {
       postId: post.id,
     } as PostCreatedEvent);
 
@@ -42,7 +42,7 @@ export class PostsService {
   }
 
   async updateStatus(postId: number, status: PostStatus): Promise<void> {
-    await this.prisma.post.update({
+    await this.prismaService.post.update({
       data: { status },
       where: { id: postId },
     });

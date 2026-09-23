@@ -9,13 +9,13 @@ describe('PostsService', () => {
   let prisma: {
     post: { create: jest.Mock; findUnique: jest.Mock; update: jest.Mock };
   };
-  let rabbitMQ: { sendToQueue: jest.Mock };
+  let rabbitMQ: { sendToEmbeddingQueue: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
       post: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
     };
-    rabbitMQ = { sendToQueue: jest.fn() };
+    rabbitMQ = { sendToEmbeddingQueue: jest.fn() };
 
     const testingModule: TestingModule = await Test.createTestingModule({
       providers: [
@@ -52,7 +52,7 @@ describe('PostsService', () => {
     expect(prisma.post.create).toHaveBeenCalledWith({
       data: { content: 'test', email: undefined, content_type: 'text/plain' },
     });
-    expect(rabbitMQ.sendToQueue).toHaveBeenCalledWith('post.created', {
+    expect(rabbitMQ.sendToEmbeddingQueue).toHaveBeenCalledWith('post.created', {
       postId: 1,
     });
     expect(result).toBe(createdPost);

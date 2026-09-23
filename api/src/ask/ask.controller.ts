@@ -1,14 +1,18 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { AskService } from './ask.service';
 import { AskDto } from './ask.dto';
+import { QuestionStatus } from '../generated/prisma/enums';
 
 @Controller('ask')
 export class AskController {
   constructor(private askService: AskService) {}
 
   @Post()
-  async ask(@Body() dto: AskDto): Promise<{ response: string }> {
-    const response = await this.askService.ask(dto);
-    return { response };
+  @HttpCode(202)
+  async ask(
+    @Body() dto: AskDto,
+  ): Promise<{ questionId: number; status: QuestionStatus }> {
+    const question = await this.askService.ask(dto);
+    return { questionId: question.id, status: question.status };
   }
 }

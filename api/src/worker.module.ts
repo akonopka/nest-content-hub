@@ -5,6 +5,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
 import { QdrantModule } from './qdrant/qdrant.module';
 import { OllamaModule } from './ollama/ollama.module';
+import { AskWorkerController } from './worker/ask-worker.controller';
+import { QuestionsModule } from './questions/questions.module';
 
 @Module({
   imports: [
@@ -13,8 +15,9 @@ import { OllamaModule } from './ollama/ollama.module';
     PrismaModule,
     RabbitMQModule,
     QdrantModule,
+    QuestionsModule,
   ],
-  controllers: [PostsWorkerController],
+  controllers: [PostsWorkerController, AskWorkerController],
   providers: [],
 })
 export class WorkerModule {}

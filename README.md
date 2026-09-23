@@ -10,7 +10,7 @@ Pełna specyfikacja docelowego zakresu znajduje się w pliku [`Wymagania.md`](Wy
 
 - **NestJS** (Node.js/TypeScript) — API
 - **MySQL** (przez Prisma) — dane strukturalne (posty, statusy)
-- **RabbitMQ** — kolejka zadań (embedding)
+- **RabbitMQ** — kolejki zadań (embedding, obsługa pytań do `/ask`)
 - **Ollama** — lokalny model do liczenia embeddingów
 - **Qdrant** — baza wektorowa
 - Docker Compose — całe środowisko
@@ -20,13 +20,13 @@ Pełna specyfikacja docelowego zakresu znajduje się w pliku [`Wymagania.md`](Wy
 - `POST /posts` — dodanie treści tekstowej, zapis do MySQL ze statusem `PENDING`
 - `GET /posts`, `GET /posts/:id` — odczyt postów
 - Asynchroniczny worker: po dodaniu posta liczy embedding (Ollama) i zapisuje wektor w Qdrant, zmienia status na `READY` (albo `FAILED` przy błędzie)
-- `POST /ask` — pytanie w naturalnym języku; narzędzie `search_content` (embedding pytania → Qdrant → treść z MySQL) jest wywoływane zawsze, z pytaniem od modelu jeśli sam o nie poprosił, albo surowym pytaniem użytkownika w przeciwnym razie (deterministyczny fallback) — odpowiedź sklejona przez LLM na podstawie wyniku. Model ma system prompt instruujący go do odpowiadania po polsku. Na razie **synchroniczny** (odpowiedź w tym samym żądaniu, bez kolejki/maila)
+- `POST /ask` — pytanie w naturalnym języku i email; zapisuje pytanie do MySQL ze statusem `PENDING` i zwraca `202` z `questionId` od razu, przetwarzanie idzie asynchronicznie przez osobną kolejkę i workera. W workerze narzędzie `search_content` (embedding pytania → Qdrant → treść z MySQL) jest wywoływane zawsze, z pytaniem od modelu jeśli sam o nie poprosił, albo surowym pytaniem użytkownika w przeciwnym razie (deterministyczny fallback) — odpowiedź sklejona przez LLM na podstawie wyniku. Model ma system prompt instruujący go do odpowiadania po polsku. Na razie odpowiedź trafia tylko do logów workera (bez zapisu do bazy i bez maila)
 - Seed danych startowych przy pierwszym uruchomieniu — dodane posty też przechodzą przez pełny pipeline (kolejka → embedding → Qdrant), tak samo jak posty dodane przez `POST /posts`
 - Dokumentacja OpenAPI pod `/api/docs` + wyeksportowany `api/openapi.json`
 - Testy e2e (`api/test/posts.e2e-spec.ts`, `api/test/ask.e2e-spec.ts`) i jednostkowe (`api/src/posts/posts.service.spec.ts`, `api/src/ask/ask.service.spec.ts`)
 - CI (GitHub Actions): lint, build, testy jednostkowe przy każdym pushu/PR
 
-**Jeszcze nie zaimplementowane** (patrz `Wymagania.md`): pełna, asynchroniczna wersja `/ask` z powiadomieniem mailem, drugie narzędzie agenta (`query_posts`), uploady plików (PDF/audio/obraz), powiadomienia mailem.
+**Jeszcze nie zaimplementowane** (patrz `Wymagania.md`): zapis odpowiedzi `/ask` do bazy i powiadomienie mailem, drugie narzędzie agenta (`query_posts`), uploady plików (PDF/audio/obraz).
 
 ## Uruchomienie
 
@@ -58,10 +58,10 @@ curl http://localhost:3000/posts
 # pojedynczy post
 curl http://localhost:3000/posts/1
 
-# pytanie do agenta
+# pytanie do agenta (zwraca 202 od razu, odpowiedź na razie tylko w logach workera)
 curl -X POST http://localhost:3000/ask \
   -H "Content-Type: application/json" \
-  -d '{"question": "Z czego korzysta NestJS do zarządzania zależnościami?"}'
+  -d '{"question": "Z czego korzysta NestJS do zarządzania zależnościami?", "email": "test@example.com"}'
 ```
 
 ## Testy

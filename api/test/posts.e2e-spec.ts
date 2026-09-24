@@ -21,7 +21,7 @@ describe('Posts (e2e)', () => {
     };
     rabbitMQService = { sendToEmbeddingQueue: jest.fn() };
 
-    const moduleFixture: TestingModule = await Test.createTestingModule({
+    const testingModule: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideProvider(PrismaService)
@@ -30,7 +30,7 @@ describe('Posts (e2e)', () => {
       .useValue(rabbitMQService)
       .compile();
 
-    app = moduleFixture.createNestApplication();
+    app = testingModule.createNestApplication();
     app.useGlobalPipes(new ValidationPipe());
 
     await app.init();

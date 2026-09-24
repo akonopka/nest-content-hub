@@ -36,7 +36,7 @@ describe('AskWorkerController', () => {
       testingModule.get<AskWorkerController>(AskWorkerController);
   });
 
-  it('throws when the question is not found', async () => {
+  it('throws when the question object is not found', async () => {
     const questionId = 1;
 
     questionsService.findOne.mockResolvedValue(null);
@@ -47,5 +47,22 @@ describe('AskWorkerController', () => {
 
     expect(questionsService.findOne).toHaveBeenCalledWith(questionId);
     expect(ollamaService.chat).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['question is empty', { id: 1, email: 'someone@example.com' }],
+    ['email is empty', { id: 1, question: 'some question' }],
+  ])('throws when %s', async (_name, question) => {
+    const questionId = question.id;
+
+    questionsService.findOne.mockResolvedValue(question);
+
+    await expect(
+      askWorkerController.handleQuestionAsked({ questionId }),
+    ).rejects.toThrow(`Question ${questionId} is missing question or email`);
+
+    expect(questionsService.findOne).toHaveBeenCalledWith(questionId);
+    expect(ollamaService.chat).not.toHaveBeenCalled();
+    expect(questionsService.markFailed).toHaveBeenCalledWith(questionId);
   });
 });

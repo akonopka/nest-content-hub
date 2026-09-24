@@ -3,8 +3,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Question, QuestionStatus } from '../generated/prisma/client';
 import { QuestionCreateDto } from './question.dto';
 import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
-import { QdrantService } from '../qdrant/qdrant.service';
-import { OllamaService } from '../ollama/ollama.service';
 
 export interface QuestionAskedEvent {
   questionId: number;
@@ -15,8 +13,6 @@ export class QuestionsService {
   constructor(
     private prismaService: PrismaService,
     private rabbitMQService: RabbitMQService,
-    private qdrantService: QdrantService,
-    private ollamaService: OllamaService,
   ) {}
 
   async findOne(id: number): Promise<Question | null> {

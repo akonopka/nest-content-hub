@@ -6,6 +6,7 @@ import { QdrantService } from '../qdrant/qdrant.service';
 import { PostsService } from '../posts/posts.service';
 import { type Message } from 'ollama';
 import { PostStatus } from '../generated/prisma/enums';
+import { searchContentTool } from '../ask/ask.tools';
 
 describe('AskWorkerController', () => {
   let askWorkerController: AskWorkerController;
@@ -68,7 +69,10 @@ describe('AskWorkerController', () => {
     expect(questionsService.markFailed).toHaveBeenCalledWith(questionId);
   });
 
-  it('uses the raw user question when the model does not call the tool', async () => {
+  it.each([
+    ['uses the raw user question when the model does not call the tool', false],
+    ['uses the question from model when the model does call the tool', true],
+  ])('%s', async (_name, toolCalledByModel) => {
     const question = {
       id: 1,
       email: 'someone@example.com',
@@ -84,10 +88,26 @@ describe('AskWorkerController', () => {
 
     const response = 'some response';
 
-    const message = {
-      role: 'assistant',
-      content: response,
-    };
+    const toolQuestion = 'refined question from the model';
+
+    const message = toolCalledByModel
+      ? {
+          role: 'assistant',
+          content: '',
+          tool_calls: [
+            {
+              function: {
+                name: 'search_content',
+                arguments: { question: toolQuestion },
+              },
+            },
+          ],
+        }
+      : { role: 'assistant', content: response };
+
+    const expectedEmbedArg = toolCalledByModel
+      ? toolQuestion
+      : question.question;
 
     const vectors = [0.1, 0.2, 0.3];
 
@@ -148,7 +168,13 @@ describe('AskWorkerController', () => {
       askWorkerController.handleQuestionAsked({ questionId }),
     ).resolves.toBe(undefined);
 
-    expect(ollamaService.embed).toHaveBeenCalledWith(question.question);
+    expect(ollamaService.chat).toHaveBeenNthCalledWith(
+      1,
+      [systemMessage, userMessage],
+      [searchContentTool],
+    );
+
+    expect(ollamaService.embed).toHaveBeenCalledWith(expectedEmbedArg);
     expect(qdrantService.search).toHaveBeenCalledWith(
       process.env.POSTS_COLLECTION,
       vectors,

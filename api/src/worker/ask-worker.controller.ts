@@ -36,7 +36,7 @@ export class AskWorkerController {
       { role: 'system', content: process.env.ASK_SYSTEM_PROMPT! },
       { role: 'user', content: questionObj.question },
     ];
-    const message = await this.ollamaService.chat(messages, [
+    const message: Message = await this.ollamaService.chat(messages, [
       searchContentTool,
     ]);
 

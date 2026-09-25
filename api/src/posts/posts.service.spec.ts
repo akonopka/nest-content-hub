@@ -44,18 +44,22 @@ describe('PostsService', () => {
   });
 
   it('creates a post and emits an event to the queue', async () => {
-    const createdPost = { id: 1, content: 'test', email: null };
+    const createdPost = { id: 1, content: 'test' };
     prismaService.post.create.mockResolvedValue(createdPost);
 
     const result = await postsService.create({ content: 'test' });
 
     expect(prismaService.post.create).toHaveBeenCalledWith({
-      data: { content: 'test', email: undefined, content_type: 'text/plain' },
+      data: {
+        content: createdPost.content,
+        email: undefined,
+        content_type: 'text/plain',
+      },
     });
     expect(rabbitMQService.sendToEmbeddingQueue).toHaveBeenCalledWith(
       'post.created',
       {
-        postId: 1,
+        postId: createdPost.id,
       },
     );
     expect(result).toBe(createdPost);

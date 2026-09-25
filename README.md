@@ -23,7 +23,7 @@ Pełna specyfikacja docelowego zakresu znajduje się w pliku [`Wymagania.md`](Wy
 - `POST /ask` — pytanie w naturalnym języku i email; zapisuje pytanie do MySQL ze statusem `PENDING` i zwraca `202` z `questionId` od razu, przetwarzanie idzie asynchronicznie przez osobną kolejkę i workera. W workerze narzędzie `search_content` (embedding pytania → Qdrant → treść z MySQL) jest wywoływane zawsze, z pytaniem od modelu jeśli sam o nie poprosił, albo surowym pytaniem użytkownika w przeciwnym razie (deterministyczny fallback) — odpowiedź sklejona przez LLM na podstawie wyniku. Model ma system prompt instruujący go do odpowiadania po polsku. Na razie odpowiedź trafia tylko do logów workera (bez zapisu do bazy i bez maila)
 - Seed danych startowych przy pierwszym uruchomieniu — dodane posty też przechodzą przez pełny pipeline (kolejka → embedding → Qdrant), tak samo jak posty dodane przez `POST /posts`
 - Dokumentacja OpenAPI pod `/api/docs` + wyeksportowany `api/openapi.json`
-- Testy e2e (`api/test/posts.e2e-spec.ts`, `api/test/ask.e2e-spec.ts`) i jednostkowe (`api/src/posts/posts.service.spec.ts`, `api/src/ask/ask.service.spec.ts`)
+- Testy e2e (`api/test/posts.e2e-spec.ts`, `api/test/ask.e2e-spec.ts`) i jednostkowe (`api/src/posts/posts.service.spec.ts`, `api/src/questions/questions.service.spec.ts`, `api/src/ask/ask.service.spec.ts`, `api/src/worker/posts-worker.controller.spec.ts`, `api/src/worker/ask-worker.controller.spec.ts`)
 - CI (GitHub Actions): lint, build, testy jednostkowe przy każdym pushu/PR
 
 **Jeszcze nie zaimplementowane** (patrz `Wymagania.md`): zapis odpowiedzi `/ask` do bazy i powiadomienie mailem, drugie narzędzie agenta (`query_posts`), uploady plików (PDF/audio/obraz).

@@ -90,9 +90,9 @@ describe('QuestionsService', () => {
   });
 
   it.each([
-    ['ready', QuestionStatus.READY],
-    ['failed', QuestionStatus.FAILED],
-  ])('marks questions as %s', async (_name, questionStatus: QuestionStatus) => {
+    { name: 'ready', questionStatus: QuestionStatus.READY },
+    { name: 'failed', questionStatus: QuestionStatus.FAILED },
+  ])('marks questions as $name', async ({ questionStatus }) => {
     const questionId = 1;
 
     const updatedQuestion = {

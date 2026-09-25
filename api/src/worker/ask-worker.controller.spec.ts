@@ -46,16 +46,22 @@ describe('AskWorkerController', () => {
 
     await expect(
       askWorkerController.handleQuestionAsked({ questionId }),
-    ).rejects.toThrow('Question 1 not found');
+    ).rejects.toThrow(`Question ${questionId} not found`);
 
     expect(questionsService.findOne).toHaveBeenCalledWith(questionId);
     expect(ollamaService.chat).not.toHaveBeenCalled();
   });
 
   it.each([
-    ['question is empty', { id: 1, email: 'someone@example.com' }],
-    ['email is empty', { id: 1, question: 'some question' }],
-  ])('throws when %s', async (_name, question) => {
+    {
+      name: 'question is empty',
+      question: { id: 1, email: 'someone@example.com' },
+    },
+    {
+      name: 'email is empty',
+      question: { id: 1, question: 'some question' },
+    },
+  ])('throws when $name', async ({ question }) => {
     const questionId = question.id;
 
     questionsService.findOne.mockResolvedValue(question);
@@ -70,9 +76,15 @@ describe('AskWorkerController', () => {
   });
 
   it.each([
-    ['uses the raw user question when the model does not call the tool', false],
-    ['uses the question from model when the model does call the tool', true],
-  ])('%s', async (_name, toolCalledByModel) => {
+    {
+      name: 'uses the raw user question when the model does not call the tool',
+      toolCalledByModel: false,
+    },
+    {
+      name: 'uses the question from model when the model does call the tool',
+      toolCalledByModel: true,
+    },
+  ])('$name', async ({ toolCalledByModel }) => {
     const question = {
       id: 1,
       email: 'someone@example.com',

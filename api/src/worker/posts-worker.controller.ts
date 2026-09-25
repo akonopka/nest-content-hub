@@ -9,6 +9,7 @@ import {
 } from './post-payload.interface';
 import { OllamaService } from '../ollama/ollama.service';
 import { QdrantService } from '../qdrant/qdrant.service';
+import { Post } from '../generated/prisma/client';
 
 @Controller()
 export class PostsWorkerController {
@@ -21,28 +22,29 @@ export class PostsWorkerController {
   @EventPattern('post.created')
   async handlePostCreated(data: PostCreatedEvent): Promise<void> {
     const postId = data.postId;
-    const post = await this.postService.findOne(postId);
-
-    if (!post) {
-      console.error(`Post ${postId} not found`);
-      return;
-    }
-
-    if (!post.content) {
-      await this.postService.markFailed(postId);
-      return;
-    }
+    let post: Post | null = null;
 
     try {
+      post = await this.postService.findOne(postId);
+
+      if (!post) {
+        throw new Error(`Post ${postId} not found`);
+      }
+
+      if (!post.content) {
+        throw new Error(`Post ${postId} has no content`);
+      }
+
       if (
         !process.env.OLLAMA_EMBEDD_MODEL ||
         !Object.values(EmbeddingModel).includes(
           process.env.OLLAMA_EMBEDD_MODEL as EmbeddingModel,
         )
       ) {
-        throw new Error(
+        console.error(
           `Unsupported embedding model: ${process.env.OLLAMA_EMBEDD_MODEL}`,
         );
+        return;
       }
 
       const vector = await this.ollamaService.embed(post.content);
@@ -70,7 +72,9 @@ export class PostsWorkerController {
       await this.postService.markReady(postId);
     } catch (error) {
       console.error(`Failed to process post ${data.postId}`, error);
-      await this.postService.markFailed(post.id);
+      if (post) {
+        await this.postService.markFailed(post.id);
+      }
     }
   }
 }

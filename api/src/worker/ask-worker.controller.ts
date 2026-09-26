@@ -8,6 +8,8 @@ import { OllamaService } from '../ollama/ollama.service';
 import { searchContentTool } from '../ask/ask.tools';
 import { QdrantService } from '../qdrant/qdrant.service';
 import { PostsService } from '../posts/posts.service';
+import { MailService } from '../mail/mail.service';
+import escapeHtml from 'escape-html';
 
 @Controller()
 export class AskWorkerController {
@@ -16,6 +18,7 @@ export class AskWorkerController {
     private readonly ollamaService: OllamaService,
     private readonly qdrantService: QdrantService,
     private readonly postsService: PostsService,
+    private readonly mailService: MailService,
   ) {}
 
   @EventPattern('question.asked')
@@ -61,7 +64,40 @@ export class AskWorkerController {
       },
     ];
     const finalMessage = await this.ollamaService.chat(fullMessages);
+
     console.log(finalMessage);
+
+    const content = finalMessage.content;
+
+    if (!content) return;
+
+    const text = `
+Cześć,
+
+Twoje pytanie:
+${questionObj.question}
+
+Odpowiedź:
+${content}
+
+--
+nest-content-hub
+`;
+
+    const html = `
+<p>Cześć,</p>
+<p><strong>Twoje pytanie:</strong><br>${escapeHtml(questionObj.question)}</p>
+<p><strong>Odpowiedź:</strong><br>${escapeHtml(content).replace(/\n/g, '<br>')}</p>
+<hr>
+<p><small>nest-content-hub</small></p>
+`;
+
+    await this.mailService.send(
+      questionObj.email,
+      'Odpowiedź na Twoje pytanie',
+      text,
+      html,
+    );
   }
 
   async searchContent(question: string): Promise<Post[]> {

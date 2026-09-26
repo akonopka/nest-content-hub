@@ -7,6 +7,7 @@ import { QdrantModule } from './qdrant/qdrant.module';
 import { OllamaModule } from './ollama/ollama.module';
 import { AskWorkerController } from './worker/ask-worker.controller';
 import { QuestionsModule } from './questions/questions.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { QuestionsModule } from './questions/questions.module';
     RabbitMQModule,
     QdrantModule,
     QuestionsModule,
+    MailModule,
   ],
   controllers: [PostsWorkerController, AskWorkerController],
   providers: [],

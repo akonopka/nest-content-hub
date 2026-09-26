@@ -4,6 +4,8 @@ import { QuestionsService } from '../questions/questions.service';
 import { OllamaService } from '../ollama/ollama.service';
 import { QdrantService } from '../qdrant/qdrant.service';
 import { PostsService } from '../posts/posts.service';
+import { MailService } from '../mail/mail.service';
+
 import { type Message } from 'ollama';
 import { PostStatus } from '../generated/prisma/enums';
 import { searchContentTool } from '../ask/ask.tools';
@@ -18,12 +20,14 @@ describe('AskWorkerController', () => {
   let ollamaService: { embed: jest.Mock; chat: jest.Mock };
   let postsService: { findByIds: jest.Mock };
   let qdrantService: { search: jest.Mock };
+  let mailService: { send: jest.Mock };
 
   beforeEach(async () => {
     questionsService = { markFailed: jest.fn(), findOne: jest.fn() };
     ollamaService = { embed: jest.fn(), chat: jest.fn() };
     postsService = { findByIds: jest.fn() };
     qdrantService = { search: jest.fn() };
+    mailService = { send: jest.fn() };
 
     const testingModule: TestingModule = await Test.createTestingModule({
       providers: [
@@ -31,6 +35,7 @@ describe('AskWorkerController', () => {
         { provide: OllamaService, useValue: ollamaService },
         { provide: PostsService, useValue: postsService },
         { provide: QdrantService, useValue: qdrantService },
+        { provide: MailService, useValue: mailService },
       ],
       controllers: [AskWorkerController],
     }).compile();
@@ -204,5 +209,12 @@ describe('AskWorkerController', () => {
       role: 'assistant',
       content: finalResponse,
     });
+
+    expect(mailService.send).toHaveBeenCalledWith(
+      question.email,
+      'Odpowiedź na Twoje pytanie',
+      expect.stringContaining(question.question),
+      expect.stringContaining(finalResponse),
+    );
   });
 });

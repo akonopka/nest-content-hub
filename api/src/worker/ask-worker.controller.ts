@@ -68,8 +68,6 @@ export class AskWorkerController {
       ];
       const finalMessage = await this.ollamaService.chat(fullMessages);
 
-      console.log(finalMessage);
-
       const content = finalMessage.content;
 
       if (!content) {

@@ -193,8 +193,6 @@ describe('AskWorkerController', () => {
 
     ollamaService.chat.mockResolvedValueOnce(finalMessage as Message);
 
-    const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-
     mailService.send.mockResolvedValueOnce(true);
 
     await expect(
@@ -220,11 +218,6 @@ describe('AskWorkerController', () => {
     );
 
     expect(ollamaService.chat).toHaveBeenNthCalledWith(2, messages);
-
-    expect(consoleSpy).toHaveBeenCalledWith({
-      role: 'assistant',
-      content: finalResponse,
-    });
 
     expect(questionsService.saveAnswer).toHaveBeenCalledWith(
       questionId,

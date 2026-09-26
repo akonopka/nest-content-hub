@@ -50,6 +50,10 @@ describe('Questions (e2e)', () => {
 
     const response = await server.get('/questions/1').expect(200);
 
+    expect(prismaService.question.findUnique).toHaveBeenCalledWith({
+      where: { id: questionId },
+    });
+
     expect(response.body).toEqual({
       id: questionId,
       question: existingQuestion.question,

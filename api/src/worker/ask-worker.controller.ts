@@ -35,43 +35,49 @@ export class AskWorkerController {
       throw new Error(`Question ${questionId} is missing question or email`);
     }
 
-    const messages: Message[] = [
-      { role: 'system', content: process.env.ASK_SYSTEM_PROMPT! },
-      { role: 'user', content: questionObj.question },
-    ];
-    const message: Message = await this.ollamaService.chat(messages, [
-      searchContentTool,
-    ]);
+    await this.questionsService.markProcessing(questionId);
 
-    let question: string;
+    try {
+      const messages: Message[] = [
+        { role: 'system', content: process.env.ASK_SYSTEM_PROMPT! },
+        { role: 'user', content: questionObj.question },
+      ];
+      const message: Message = await this.ollamaService.chat(messages, [
+        searchContentTool,
+      ]);
 
-    if (!message.tool_calls || message.tool_calls.length === 0) {
-      question = questionObj.question;
-    } else {
-      const toolCall = message.tool_calls[0];
-      question = toolCall.function.arguments.question as string;
-    }
+      let question: string;
 
-    const posts = await this.searchContent(question);
+      if (!message.tool_calls || message.tool_calls.length === 0) {
+        question = questionObj.question;
+      } else {
+        const toolCall = message.tool_calls[0];
+        question = toolCall.function.arguments.question as string;
+      }
 
-    const fullMessages = [
-      ...messages,
-      message,
-      {
-        role: 'tool',
-        content: JSON.stringify(posts),
-        tool_name: 'search_content',
-      },
-    ];
-    const finalMessage = await this.ollamaService.chat(fullMessages);
+      const posts = await this.searchContent(question);
 
-    console.log(finalMessage);
+      const fullMessages = [
+        ...messages,
+        message,
+        {
+          role: 'tool',
+          content: JSON.stringify(posts),
+          tool_name: 'search_content',
+        },
+      ];
+      const finalMessage = await this.ollamaService.chat(fullMessages);
 
-    const content = finalMessage.content;
+      console.log(finalMessage);
 
-    if (!content) return;
+      const content = finalMessage.content;
 
-    const text = `
+      if (!content) {
+        await this.questionsService.markFailed(questionId);
+        return;
+      }
+
+      const text = `
 Cześć,
 
 Twoje pytanie:
@@ -84,7 +90,7 @@ ${content}
 nest-content-hub
 `;
 
-    const html = `
+      const html = `
 <p>Cześć,</p>
 <p><strong>Twoje pytanie:</strong><br>${escapeHtml(questionObj.question)}</p>
 <p><strong>Odpowiedź:</strong><br>${escapeHtml(content).replace(/\n/g, '<br>')}</p>
@@ -92,12 +98,22 @@ nest-content-hub
 <p><small>nest-content-hub</small></p>
 `;
 
-    await this.mailService.send(
-      questionObj.email,
-      'Odpowiedź na Twoje pytanie',
-      text,
-      html,
-    );
+      const mailSent = await this.mailService.send(
+        questionObj.email,
+        'Odpowiedź na Twoje pytanie',
+        text,
+        html,
+      );
+
+      if (mailSent) {
+        await this.questionsService.markReady(questionId);
+      } else {
+        await this.questionsService.markFailed(questionId);
+      }
+    } catch (error) {
+      console.error(`Failed to process question ${questionId}`, error);
+      await this.questionsService.markFailed(questionId);
+    }
   }
 
   async searchContent(question: string): Promise<Post[]> {

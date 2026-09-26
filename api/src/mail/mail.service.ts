@@ -13,7 +13,7 @@ export class MailService {
     subject: string,
     text: string,
     html: string,
-  ): Promise<void> {
+  ): Promise<boolean> {
     try {
       const info = await this.transporter.sendMail({
         from: process.env.MAIL_FROM,
@@ -24,8 +24,10 @@ export class MailService {
       });
 
       console.log('Message sent: %s', info.messageId);
+      return true;
     } catch (err) {
       console.error('Error while sending mail:', err);
+      return false;
     }
   }
 }

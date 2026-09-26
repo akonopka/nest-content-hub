@@ -54,6 +54,10 @@ export class QuestionsService {
     await this.updateStatus(questionId, QuestionStatus.FAILED);
   }
 
+  async markProcessing(questionId: number): Promise<void> {
+    await this.updateStatus(questionId, QuestionStatus.PROCESSING);
+  }
+
   async markReady(questionId: number): Promise<void> {
     await this.updateStatus(questionId, QuestionStatus.READY);
   }

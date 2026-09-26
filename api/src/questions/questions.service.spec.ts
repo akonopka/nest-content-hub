@@ -92,6 +92,7 @@ describe('QuestionsService', () => {
   it.each([
     { name: 'ready', questionStatus: QuestionStatus.READY },
     { name: 'failed', questionStatus: QuestionStatus.FAILED },
+    { name: 'processing', questionStatus: QuestionStatus.PROCESSING },
   ])('marks questions as $name', async ({ questionStatus }) => {
     const questionId = 1;
 

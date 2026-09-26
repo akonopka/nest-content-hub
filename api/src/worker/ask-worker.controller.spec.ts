@@ -15,6 +15,8 @@ describe('AskWorkerController', () => {
 
   let questionsService: {
     markFailed: jest.Mock;
+    markProcessing: jest.Mock;
+    markReady: jest.Mock;
     findOne: jest.Mock;
   };
   let ollamaService: { embed: jest.Mock; chat: jest.Mock };
@@ -23,7 +25,12 @@ describe('AskWorkerController', () => {
   let mailService: { send: jest.Mock };
 
   beforeEach(async () => {
-    questionsService = { markFailed: jest.fn(), findOne: jest.fn() };
+    questionsService = {
+      markFailed: jest.fn(),
+      markProcessing: jest.fn(),
+      markReady: jest.fn(),
+      findOne: jest.fn(),
+    };
     ollamaService = { embed: jest.fn(), chat: jest.fn() };
     postsService = { findByIds: jest.fn() };
     qdrantService = { search: jest.fn() };
@@ -55,6 +62,9 @@ describe('AskWorkerController', () => {
 
     expect(questionsService.findOne).toHaveBeenCalledWith(questionId);
     expect(ollamaService.chat).not.toHaveBeenCalled();
+
+    expect(questionsService.markProcessing).not.toHaveBeenCalled();
+    expect(questionsService.markFailed).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -77,6 +87,8 @@ describe('AskWorkerController', () => {
 
     expect(questionsService.findOne).toHaveBeenCalledWith(questionId);
     expect(ollamaService.chat).not.toHaveBeenCalled();
+
+    expect(questionsService.markProcessing).not.toHaveBeenCalled();
     expect(questionsService.markFailed).toHaveBeenCalledWith(questionId);
   });
 
@@ -181,6 +193,8 @@ describe('AskWorkerController', () => {
 
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
 
+    mailService.send.mockResolvedValueOnce(true);
+
     await expect(
       askWorkerController.handleQuestionAsked({ questionId }),
     ).resolves.toBe(undefined);
@@ -216,5 +230,11 @@ describe('AskWorkerController', () => {
       expect.stringContaining(question.question),
       expect.stringContaining(finalResponse),
     );
+
+    expect(questionsService.markProcessing).toHaveBeenCalledWith(questionId);
+    expect(questionsService.markReady).toHaveBeenCalledWith(questionId);
+    expect(questionsService.markFailed).not.toHaveBeenCalled();
   });
+
+  afterEach(() => jest.restoreAllMocks());
 });

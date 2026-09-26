@@ -10,3 +10,10 @@ export class QuestionCreateDto {
   @IsEmail()
   email: string;
 }
+
+export class QuestionGetDto {
+  id: number;
+  question: string;
+  answer: string | null;
+  status: string;
+}

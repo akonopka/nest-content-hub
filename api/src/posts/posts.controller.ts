@@ -13,23 +13,23 @@ import { PostCreateDto } from './post.dto';
 
 @Controller('posts')
 export class PostsController {
-  constructor(private postService: PostsService) {}
+  constructor(private postsService: PostsService) {}
 
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<PostModel> {
-    const post = await this.postService.findOne(id);
+    const post = await this.postsService.findOne(id);
     if (post == null) throw new NotFoundException();
     return post;
   }
 
   @Get()
   async findAll(): Promise<PostModel[]> {
-    const posts = await this.postService.findAll();
+    const posts = await this.postsService.findAll();
     return posts;
   }
 
   @Post()
   async create(@Body() dto: PostCreateDto): Promise<PostModel> {
-    return this.postService.create(dto);
+    return this.postsService.create(dto);
   }
 }

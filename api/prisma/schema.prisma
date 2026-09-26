@@ -23,7 +23,7 @@ enum PostStatus {
 model Post {
   id           Int        @id @default(autoincrement())
   content_type String // MIME: "text/plain", "application/pdf", "audio/mpeg", "image/png"
-  content      String?
+  content      String?    @db.Text
   status       PostStatus @default(PENDING)
   email        String?
   file_path    String?    @unique
@@ -35,10 +35,10 @@ model Post {
 
 model Question {
   id         Int            @id @default(autoincrement())
-  question   String
+  question   String         @db.Text
   email      String
   status     QuestionStatus @default(PENDING)
-  answer     String?
+  answer     String?        @db.Text
   created_at DateTime       @default(now())
   updated_at DateTime       @updatedAt
 

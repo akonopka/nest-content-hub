@@ -117,4 +117,28 @@ describe('QuestionsService', () => {
 
     expect(result).toBeUndefined();
   });
+
+  it('saves answer', async () => {
+    const questionId = 1;
+    const answer = 'some answer';
+
+    const updatedQuestion = {
+      id: questionId,
+      question: 'some question',
+      email: 'someone@example.com',
+      status: QuestionStatus.PROCESSING,
+      answer,
+    };
+
+    prismaService.question.update.mockResolvedValue(updatedQuestion);
+
+    const result = await questionsService.saveAnswer(questionId, answer);
+
+    expect(prismaService.question.update).toHaveBeenCalledWith({
+      data: { answer },
+      where: { id: questionId },
+    });
+
+    expect(result).toBeUndefined();
+  });
 });

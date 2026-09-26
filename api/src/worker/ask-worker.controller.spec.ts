@@ -18,6 +18,7 @@ describe('AskWorkerController', () => {
     markProcessing: jest.Mock;
     markReady: jest.Mock;
     findOne: jest.Mock;
+    saveAnswer: jest.Mock;
   };
   let ollamaService: { embed: jest.Mock; chat: jest.Mock };
   let postsService: { findByIds: jest.Mock };
@@ -30,6 +31,7 @@ describe('AskWorkerController', () => {
       markProcessing: jest.fn(),
       markReady: jest.fn(),
       findOne: jest.fn(),
+      saveAnswer: jest.fn(),
     };
     ollamaService = { embed: jest.fn(), chat: jest.fn() };
     postsService = { findByIds: jest.fn() };
@@ -223,6 +225,11 @@ describe('AskWorkerController', () => {
       role: 'assistant',
       content: finalResponse,
     });
+
+    expect(questionsService.saveAnswer).toHaveBeenCalledWith(
+      questionId,
+      finalResponse,
+    );
 
     expect(mailService.send).toHaveBeenCalledWith(
       question.email,

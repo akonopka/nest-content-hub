@@ -61,4 +61,11 @@ export class QuestionsService {
   async markReady(questionId: number): Promise<void> {
     await this.updateStatus(questionId, QuestionStatus.READY);
   }
+
+  async saveAnswer(questionId: number, answer: string): Promise<void> {
+    await this.prismaService.question.update({
+      data: { answer },
+      where: { id: questionId },
+    });
+  }
 }

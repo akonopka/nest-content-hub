@@ -77,6 +77,8 @@ export class AskWorkerController {
         return;
       }
 
+      await this.questionsService.saveAnswer(questionId, content);
+
       const text = `
 Cześć,
 

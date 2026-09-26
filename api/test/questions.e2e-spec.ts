@@ -33,34 +33,44 @@ describe('Questions (e2e)', () => {
     server = request(app.getHttpServer());
   });
 
-  it('gets a question with existing id', async () => {
-    const questionId = 1;
-
-    const existingQuestion = {
-      id: questionId,
-      question: 'some question',
-      email: 'someone@example.com',
-      status: QuestionStatus.READY,
+  it.each([
+    { name: 'empty answer', answer: null, status: QuestionStatus.PENDING },
+    {
+      name: 'non empty answer',
       answer: 'some answer',
-      created_at: new Date(),
-      updated_at: new Date(),
-    };
+      status: QuestionStatus.READY,
+    },
+  ])(
+    'gets a question with existing id and $name',
+    async ({ answer, status }) => {
+      const questionId = 1;
 
-    prismaService.question.findUnique.mockResolvedValue(existingQuestion);
+      const existingQuestion = {
+        id: questionId,
+        question: 'some question',
+        email: 'someone@example.com',
+        status,
+        answer,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
 
-    const response = await server.get('/questions/1').expect(200);
+      prismaService.question.findUnique.mockResolvedValue(existingQuestion);
 
-    expect(prismaService.question.findUnique).toHaveBeenCalledWith({
-      where: { id: questionId },
-    });
+      const response = await server.get(`/questions/${questionId}`).expect(200);
 
-    expect(response.body).toEqual({
-      id: questionId,
-      question: existingQuestion.question,
-      status: existingQuestion.status,
-      answer: existingQuestion.answer,
-    });
-  });
+      expect(prismaService.question.findUnique).toHaveBeenCalledWith({
+        where: { id: questionId },
+      });
+
+      expect(response.body).toEqual({
+        id: questionId,
+        question: existingQuestion.question,
+        status: existingQuestion.status,
+        answer: existingQuestion.answer,
+      });
+    },
+  );
 
   it('gets a question with not existing id', async () => {
     await server.get('/questions/999999').expect(404);

@@ -13,6 +13,7 @@ Pełna specyfikacja docelowego zakresu znajduje się w pliku [`Wymagania.md`](Wy
 - **RabbitMQ** — kolejki zadań (embedding, obsługa pytań do `/ask`)
 - **Ollama** — lokalny model do liczenia embeddingów
 - **Qdrant** — baza wektorowa
+- **MailHog** + `nodemailer` — wysyłka odpowiedzi mailem (podgląd wiadomości pod `http://localhost:8025`)
 - Docker Compose — całe środowisko
 
 ## Co obecnie działa
@@ -20,13 +21,13 @@ Pełna specyfikacja docelowego zakresu znajduje się w pliku [`Wymagania.md`](Wy
 - `POST /posts` — dodanie treści tekstowej, zapis do MySQL ze statusem `PENDING`
 - `GET /posts`, `GET /posts/:id` — odczyt postów
 - Asynchroniczny worker: po dodaniu posta liczy embedding (Ollama) i zapisuje wektor w Qdrant, zmienia status na `READY` (albo `FAILED` przy błędzie)
-- `POST /ask` — pytanie w naturalnym języku i email; zapisuje pytanie do MySQL ze statusem `PENDING` i zwraca `202` z `questionId` od razu, przetwarzanie idzie asynchronicznie przez osobną kolejkę i workera. W workerze narzędzie `search_content` (embedding pytania → Qdrant → treść z MySQL) jest wywoływane zawsze, z pytaniem od modelu jeśli sam o nie poprosił, albo surowym pytaniem użytkownika w przeciwnym razie (deterministyczny fallback) — odpowiedź sklejona przez LLM na podstawie wyniku. Model ma system prompt instruujący go do odpowiadania po polsku. Na razie odpowiedź trafia tylko do logów workera (bez zapisu do bazy i bez maila)
+- `POST /ask` — pytanie w naturalnym języku i email; zapisuje pytanie do MySQL ze statusem `PENDING` i zwraca `202` z `questionId` od razu, przetwarzanie idzie asynchronicznie przez osobną kolejkę i workera. W workerze narzędzie `search_content` (embedding pytania → Qdrant → treść z MySQL) jest wywoływane zawsze, z pytaniem od modelu jeśli sam o nie poprosił, albo surowym pytaniem użytkownika w przeciwnym razie (deterministyczny fallback) — odpowiedź sklejona przez LLM na podstawie wyniku. Model ma system prompt instruujący go do odpowiadania po polsku. Odpowiedź trafia do logów workera oraz mailem na podany adres (wersja tekstowa i HTML, treść w HTML jest escapowana); na razie bez zapisu odpowiedzi do bazy
 - Seed danych startowych przy pierwszym uruchomieniu — dodane posty też przechodzą przez pełny pipeline (kolejka → embedding → Qdrant), tak samo jak posty dodane przez `POST /posts`
 - Dokumentacja OpenAPI pod `/api/docs` + wyeksportowany `api/openapi.json`
 - Testy e2e (`api/test/posts.e2e-spec.ts`, `api/test/ask.e2e-spec.ts`) i jednostkowe (`api/src/posts/posts.service.spec.ts`, `api/src/questions/questions.service.spec.ts`, `api/src/ask/ask.service.spec.ts`, `api/src/worker/posts-worker.controller.spec.ts`, `api/src/worker/ask-worker.controller.spec.ts`)
 - CI (GitHub Actions): lint, build, testy jednostkowe przy każdym pushu/PR
 
-**Jeszcze nie zaimplementowane** (patrz `Wymagania.md`): zapis odpowiedzi `/ask` do bazy i powiadomienie mailem, drugie narzędzie agenta (`query_posts`), uploady plików (PDF/audio/obraz).
+**Jeszcze nie zaimplementowane** (patrz `Wymagania.md`): zapis odpowiedzi `/ask` i jej statusu w bazie, drugie narzędzie agenta (`query_posts`), uploady plików (PDF/audio/obraz).
 
 ## Uruchomienie
 

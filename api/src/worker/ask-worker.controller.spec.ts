@@ -234,6 +234,10 @@ describe('AskWorkerController', () => {
     expect(questionsService.markProcessing).toHaveBeenCalledWith(questionId);
     expect(questionsService.markReady).toHaveBeenCalledWith(questionId);
     expect(questionsService.markFailed).not.toHaveBeenCalled();
+
+    const saveOrder = questionsService.saveAnswer.mock.invocationCallOrder[0];
+    const sendOrder = mailService.send.mock.invocationCallOrder[0];
+    expect(saveOrder).toBeLessThan(sendOrder);
   });
 
   it('marks the question as failed when the model returns an empty answer', async () => {

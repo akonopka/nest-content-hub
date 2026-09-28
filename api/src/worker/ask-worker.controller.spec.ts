@@ -231,6 +231,142 @@ describe('AskWorkerController', () => {
       expect.stringContaining(finalResponse),
     );
 
+    const [, , , html] = mailService.send.mock.calls[0];
+    expect(html).toContain(question.question);
+
+    expect(questionsService.markProcessing).toHaveBeenCalledWith(questionId);
+    expect(questionsService.markReady).toHaveBeenCalledWith(questionId);
+    expect(questionsService.markFailed).not.toHaveBeenCalled();
+
+    const saveOrder = questionsService.saveAnswer.mock.invocationCallOrder[0];
+    const sendOrder = mailService.send.mock.invocationCallOrder[0];
+    expect(saveOrder).toBeLessThan(sendOrder);
+  });
+
+  it('escapes mail content', async () => {
+    const question = {
+      id: 1,
+      email: 'someone@example.com',
+      question: '<b>some question</b>',
+    };
+    const questionId = question.id;
+
+    const systemMessage = {
+      role: 'system',
+      content: process.env.ASK_SYSTEM_PROMPT,
+    };
+    const userMessage = { role: 'user', content: question.question };
+
+    const toolQuestion = 'refined question from the model';
+
+    const message = {
+      role: 'assistant',
+      content: '',
+      tool_calls: [
+        {
+          function: {
+            name: 'search_content',
+            arguments: { question: toolQuestion },
+          },
+        },
+      ],
+    };
+
+    const vectors = [0.1, 0.2, 0.3];
+
+    const posts = [
+      {
+        email: 'someone@example.com',
+        id: 1,
+        status: PostStatus.READY,
+        created_at: new Date(),
+        updated_at: new Date(),
+        content_type: 'text/plain',
+        content: 'some example post',
+      },
+      {
+        email: 'someoneelse@example.com',
+        id: 2,
+        status: PostStatus.READY,
+        created_at: new Date(),
+        updated_at: new Date(),
+        content_type: 'text/plain',
+        content: 'some another example post',
+      },
+    ];
+
+    const finalResponse = 'some final response';
+
+    const finalMessage = {
+      role: 'assistant',
+      content: finalResponse,
+    };
+
+    const messages = [
+      systemMessage,
+      userMessage,
+      message,
+      {
+        role: 'tool',
+        content: JSON.stringify(posts),
+        tool_name: 'search_content',
+      },
+    ];
+
+    questionsService.findOne.mockResolvedValue(question);
+
+    ollamaService.chat.mockResolvedValueOnce(message as Message);
+
+    ollamaService.embed.mockResolvedValue(vectors);
+    qdrantService.search.mockResolvedValue({
+      points: posts.map((post) => ({ payload: { post_id: post.id } })),
+    });
+    postsService.findByIds.mockResolvedValue(posts);
+
+    ollamaService.chat.mockResolvedValueOnce(finalMessage as Message);
+
+    mailService.send.mockResolvedValueOnce(true);
+
+    await expect(
+      askWorkerController.handleQuestionAsked({ questionId }),
+    ).resolves.toBeUndefined();
+
+    expect(ollamaService.chat).toHaveBeenNthCalledWith(
+      1,
+      [systemMessage, userMessage],
+      [searchContentTool],
+    );
+
+    expect(ollamaService.embed).toHaveBeenCalledWith(toolQuestion);
+    expect(qdrantService.search).toHaveBeenCalledWith(
+      process.env.POSTS_COLLECTION,
+      vectors,
+      Number(process.env.SEARCH_CONTENT_LIMIT),
+      Number(process.env.SEARCH_CONTENT_SCORE_THRESHOLD),
+    );
+
+    expect(postsService.findByIds).toHaveBeenCalledWith(
+      posts.map((post) => post.id),
+    );
+
+    expect(ollamaService.chat).toHaveBeenNthCalledWith(2, messages);
+
+    expect(questionsService.saveAnswer).toHaveBeenCalledWith(
+      questionId,
+      finalResponse,
+    );
+
+    expect(mailService.send).toHaveBeenCalledWith(
+      question.email,
+      'Odpowiedź na Twoje pytanie',
+      expect.stringContaining(question.question),
+      expect.stringContaining(finalResponse),
+    );
+
+    const [, , , html] = mailService.send.mock.calls[0];
+    expect(html).toContain('&lt;b&gt;some question&lt;/b&gt;');
+    expect(html).not.toContain('<b>some question</b>');
+
     expect(questionsService.markProcessing).toHaveBeenCalledWith(questionId);
     expect(questionsService.markReady).toHaveBeenCalledWith(questionId);
     expect(questionsService.markFailed).not.toHaveBeenCalled();

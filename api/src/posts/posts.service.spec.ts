@@ -7,13 +7,23 @@ import { PostStatus } from '../generated/prisma/enums';
 describe('PostsService', () => {
   let postsService: PostsService;
   let prismaService: {
-    post: { create: jest.Mock; findUnique: jest.Mock; update: jest.Mock };
+    post: {
+      create: jest.Mock;
+      findUnique: jest.Mock;
+      update: jest.Mock;
+      findMany: jest.Mock;
+    };
   };
   let rabbitMQService: { sendToEmbeddingQueue: jest.Mock };
 
   beforeEach(async () => {
     prismaService = {
-      post: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
+      post: {
+        create: jest.fn(),
+        findUnique: jest.fn(),
+        update: jest.fn(),
+        findMany: jest.fn(),
+      },
     };
     rabbitMQService = { sendToEmbeddingQueue: jest.fn() };
 
@@ -74,5 +84,23 @@ describe('PostsService', () => {
       data: { status: PostStatus.READY },
       where: { id: postId },
     });
+  });
+
+  it('finds posts by ids', async () => {
+    const foundPosts = [
+      { id: 1, content: 'test1', email: 'someone@example1.com' },
+      { id: 2, content: 'test2', email: 'someoneelse@exammple2.com' },
+    ];
+    const foundPostsIds = foundPosts.map((foundPost) => foundPost.id);
+
+    prismaService.post.findMany.mockResolvedValue(foundPosts);
+
+    const result = await postsService.findByIds(foundPostsIds);
+
+    expect(prismaService.post.findMany).toHaveBeenCalledWith({
+      where: { id: { in: foundPostsIds } },
+    });
+
+    expect(result).toBe(foundPosts);
   });
 });

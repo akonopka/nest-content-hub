@@ -98,185 +98,240 @@ describe('AskWorkerController', () => {
     {
       name: 'uses the raw user question when the model does not call the tool',
       toolCalledByModel: false,
-      finalResponse: 'some final response',
-      finalMessage: {
-        role: 'assistant',
-        content: 'some final response',
-      },
-      mailSent: true,
     },
     {
       name: 'uses the question from model when the model does call the tool',
       toolCalledByModel: true,
-      finalResponse: 'some final response',
-      finalMessage: {
-        role: 'assistant',
-        content: 'some final response',
-      },
-      mailSent: true,
     },
-    {
-      name: 'marks the question as failed when the model returns an empty answer',
-      toolCalledByModel: true,
-      finalResponse: '',
-      finalMessage: { role: 'assistant', content: '' },
-    },
-    {
-      name: 'marks the question as failed when sending the email fails',
-      toolCalledByModel: false,
-      finalResponse: 'some final response',
-      finalMessage: {
-        role: 'assistant',
-        content: 'some final response',
-      },
-      mailSent: false,
-    },
-  ])(
-    '$name',
-    async ({ toolCalledByModel, finalResponse, finalMessage, mailSent }) => {
-      const question = {
-        id: 1,
-        email: 'someone@example.com',
-        question: 'some question',
-      };
-      const questionId = question.id;
+  ])('$name', async ({ toolCalledByModel }) => {
+    const question = {
+      id: 1,
+      email: 'someone@example.com',
+      question: 'some question',
+    };
+    const questionId = question.id;
 
-      const systemMessage = {
-        role: 'system',
-        content: process.env.ASK_SYSTEM_PROMPT,
-      };
-      const userMessage = { role: 'user', content: question.question };
+    const systemMessage = {
+      role: 'system',
+      content: process.env.ASK_SYSTEM_PROMPT,
+    };
+    const userMessage = { role: 'user', content: question.question };
 
-      const response = 'some response';
+    const response = 'some response';
 
-      const toolQuestion = 'refined question from the model';
+    const toolQuestion = 'refined question from the model';
 
-      const message = toolCalledByModel
-        ? {
-            role: 'assistant',
-            content: '',
-            tool_calls: [
-              {
-                function: {
-                  name: 'search_content',
-                  arguments: { question: toolQuestion },
-                },
+    const message = toolCalledByModel
+      ? {
+          role: 'assistant',
+          content: '',
+          tool_calls: [
+            {
+              function: {
+                name: 'search_content',
+                arguments: { question: toolQuestion },
               },
-            ],
-          }
-        : { role: 'assistant', content: response };
-
-      const expectedEmbedArg = toolCalledByModel
-        ? toolQuestion
-        : question.question;
-
-      const vectors = [0.1, 0.2, 0.3];
-
-      const posts = [
-        {
-          email: 'someone@example.com',
-          id: 1,
-          status: PostStatus.READY,
-          created_at: new Date(),
-          updated_at: new Date(),
-          content_type: 'text/plain',
-          content: 'some example post',
-        },
-        {
-          email: 'someoneelse@example.com',
-          id: 2,
-          status: PostStatus.READY,
-          created_at: new Date(),
-          updated_at: new Date(),
-          content_type: 'text/plain',
-          content: 'some another example post',
-        },
-      ];
-
-      const messages = [
-        systemMessage,
-        userMessage,
-        message,
-        {
-          role: 'tool',
-          content: JSON.stringify(posts),
-          tool_name: 'search_content',
-        },
-      ];
-
-      questionsService.findOne.mockResolvedValue(question);
-
-      ollamaService.chat.mockResolvedValueOnce(message as Message);
-
-      ollamaService.embed.mockResolvedValue(vectors);
-      qdrantService.search.mockResolvedValue({
-        points: posts.map((post) => ({ payload: { post_id: post.id } })),
-      });
-      postsService.findByIds.mockResolvedValue(posts);
-
-      ollamaService.chat.mockResolvedValueOnce(finalMessage as Message);
-
-      mailService.send.mockResolvedValueOnce(mailSent);
-
-      await expect(
-        askWorkerController.handleQuestionAsked({ questionId }),
-      ).resolves.toBe(undefined);
-
-      expect(ollamaService.chat).toHaveBeenNthCalledWith(
-        1,
-        [systemMessage, userMessage],
-        [searchContentTool],
-      );
-
-      expect(ollamaService.embed).toHaveBeenCalledWith(expectedEmbedArg);
-      expect(qdrantService.search).toHaveBeenCalledWith(
-        process.env.POSTS_COLLECTION,
-        vectors,
-        Number(process.env.SEARCH_CONTENT_LIMIT),
-        Number(process.env.SEARCH_CONTENT_SCORE_THRESHOLD),
-      );
-
-      expect(postsService.findByIds).toHaveBeenCalledWith(
-        posts.map((post) => post.id),
-      );
-
-      expect(ollamaService.chat).toHaveBeenNthCalledWith(2, messages);
-
-      if (finalResponse) {
-        expect(questionsService.saveAnswer).toHaveBeenCalledWith(
-          questionId,
-          finalResponse,
-        );
-
-        expect(mailService.send).toHaveBeenCalledWith(
-          question.email,
-          'Odpowiedź na Twoje pytanie',
-          expect.stringContaining(question.question),
-          expect.stringContaining(finalResponse),
-        );
-
-        expect(questionsService.markProcessing).toHaveBeenCalledWith(
-          questionId,
-        );
-
-        if (mailSent) {
-          expect(questionsService.markReady).toHaveBeenCalledWith(questionId);
-          expect(questionsService.markFailed).not.toHaveBeenCalled();
-        } else {
-          expect(questionsService.markFailed).toHaveBeenCalledWith(questionId);
-          expect(questionsService.markReady).not.toHaveBeenCalled();
+            },
+          ],
         }
-      } else {
-        expect(questionsService.saveAnswer).not.toHaveBeenCalled();
-        expect(mailService.send).not.toHaveBeenCalled();
-        expect(questionsService.markProcessing).toHaveBeenCalledWith(
-          questionId,
-        );
-        expect(questionsService.markFailed).toHaveBeenCalledWith(questionId);
-        expect(questionsService.markReady).not.toHaveBeenCalled();
-      }
-    },
-  );
+      : { role: 'assistant', content: response };
+
+    const expectedEmbedArg = toolCalledByModel
+      ? toolQuestion
+      : question.question;
+
+    const vectors = [0.1, 0.2, 0.3];
+
+    const posts = [
+      {
+        email: 'someone@example.com',
+        id: 1,
+        status: PostStatus.READY,
+        created_at: new Date(),
+        updated_at: new Date(),
+        content_type: 'text/plain',
+        content: 'some example post',
+      },
+      {
+        email: 'someoneelse@example.com',
+        id: 2,
+        status: PostStatus.READY,
+        created_at: new Date(),
+        updated_at: new Date(),
+        content_type: 'text/plain',
+        content: 'some another example post',
+      },
+    ];
+
+    const finalResponse = 'some final response';
+
+    const finalMessage = {
+      role: 'assistant',
+      content: finalResponse,
+    };
+
+    const messages = [
+      systemMessage,
+      userMessage,
+      message,
+      {
+        role: 'tool',
+        content: JSON.stringify(posts),
+        tool_name: 'search_content',
+      },
+    ];
+
+    questionsService.findOne.mockResolvedValue(question);
+
+    ollamaService.chat.mockResolvedValueOnce(message as Message);
+
+    ollamaService.embed.mockResolvedValue(vectors);
+    qdrantService.search.mockResolvedValue({
+      points: posts.map((post) => ({ payload: { post_id: post.id } })),
+    });
+    postsService.findByIds.mockResolvedValue(posts);
+
+    ollamaService.chat.mockResolvedValueOnce(finalMessage as Message);
+
+    mailService.send.mockResolvedValueOnce(true);
+
+    await expect(
+      askWorkerController.handleQuestionAsked({ questionId }),
+    ).resolves.toBeUndefined();
+
+    expect(ollamaService.chat).toHaveBeenNthCalledWith(
+      1,
+      [systemMessage, userMessage],
+      [searchContentTool],
+    );
+
+    expect(ollamaService.embed).toHaveBeenCalledWith(expectedEmbedArg);
+    expect(qdrantService.search).toHaveBeenCalledWith(
+      process.env.POSTS_COLLECTION,
+      vectors,
+      Number(process.env.SEARCH_CONTENT_LIMIT),
+      Number(process.env.SEARCH_CONTENT_SCORE_THRESHOLD),
+    );
+
+    expect(postsService.findByIds).toHaveBeenCalledWith(
+      posts.map((post) => post.id),
+    );
+
+    expect(ollamaService.chat).toHaveBeenNthCalledWith(2, messages);
+
+    expect(questionsService.saveAnswer).toHaveBeenCalledWith(
+      questionId,
+      finalResponse,
+    );
+
+    expect(mailService.send).toHaveBeenCalledWith(
+      question.email,
+      'Odpowiedź na Twoje pytanie',
+      expect.stringContaining(question.question),
+      expect.stringContaining(finalResponse),
+    );
+
+    expect(questionsService.markProcessing).toHaveBeenCalledWith(questionId);
+    expect(questionsService.markReady).toHaveBeenCalledWith(questionId);
+    expect(questionsService.markFailed).not.toHaveBeenCalled();
+  });
+
+  it('marks the question as failed when the model returns an empty answer', async () => {
+    const question = {
+      id: 1,
+      email: 'someone@example.com',
+      question: 'some question',
+    };
+    const questionId = question.id;
+
+    const message = { role: 'assistant', content: 'some response' };
+    const finalMessage = { role: 'assistant', content: '' };
+
+    const vectors = [0.1, 0.2, 0.3];
+    const posts = [
+      {
+        email: 'someone@example.com',
+        id: 1,
+        status: PostStatus.READY,
+        created_at: new Date(),
+        updated_at: new Date(),
+        content_type: 'text/plain',
+        content: 'some example post',
+      },
+    ];
+
+    questionsService.findOne.mockResolvedValue(question);
+    ollamaService.chat.mockResolvedValueOnce(message as Message);
+    ollamaService.embed.mockResolvedValue(vectors);
+    qdrantService.search.mockResolvedValue({
+      points: posts.map((post) => ({ payload: { post_id: post.id } })),
+    });
+    postsService.findByIds.mockResolvedValue(posts);
+    ollamaService.chat.mockResolvedValueOnce(finalMessage as Message);
+
+    await expect(
+      askWorkerController.handleQuestionAsked({ questionId }),
+    ).resolves.toBeUndefined();
+
+    expect(questionsService.markProcessing).toHaveBeenCalledWith(questionId);
+    expect(questionsService.saveAnswer).not.toHaveBeenCalled();
+    expect(mailService.send).not.toHaveBeenCalled();
+    expect(questionsService.markFailed).toHaveBeenCalledWith(questionId);
+    expect(questionsService.markReady).not.toHaveBeenCalled();
+  });
+
+  it('marks the question as failed when sending the email fails', async () => {
+    const question = {
+      id: 1,
+      email: 'someone@example.com',
+      question: 'some question',
+    };
+    const questionId = question.id;
+
+    const message = { role: 'assistant', content: 'some response' };
+    const finalResponse = 'some final response';
+    const finalMessage = { role: 'assistant', content: finalResponse };
+
+    const vectors = [0.1, 0.2, 0.3];
+    const posts = [
+      {
+        email: 'someone@example.com',
+        id: 1,
+        status: PostStatus.READY,
+        created_at: new Date(),
+        updated_at: new Date(),
+        content_type: 'text/plain',
+        content: 'some example post',
+      },
+    ];
+
+    questionsService.findOne.mockResolvedValue(question);
+    ollamaService.chat.mockResolvedValueOnce(message as Message);
+    ollamaService.embed.mockResolvedValue(vectors);
+    qdrantService.search.mockResolvedValue({
+      points: posts.map((post) => ({ payload: { post_id: post.id } })),
+    });
+    postsService.findByIds.mockResolvedValue(posts);
+    ollamaService.chat.mockResolvedValueOnce(finalMessage as Message);
+    mailService.send.mockResolvedValueOnce(false);
+
+    await expect(
+      askWorkerController.handleQuestionAsked({ questionId }),
+    ).resolves.toBeUndefined();
+
+    expect(questionsService.saveAnswer).toHaveBeenCalledWith(
+      questionId,
+      finalResponse,
+    );
+    expect(mailService.send).toHaveBeenCalledWith(
+      question.email,
+      'Odpowiedź na Twoje pytanie',
+      expect.stringContaining(question.question),
+      expect.stringContaining(finalResponse),
+    );
+    expect(questionsService.markFailed).toHaveBeenCalledWith(questionId);
+    expect(questionsService.markReady).not.toHaveBeenCalled();
+  });
 
   it('marks the question as failed and logs the error when processing throws', async () => {
     const question = {

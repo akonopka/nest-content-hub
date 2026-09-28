@@ -10,6 +10,9 @@ done
 
 ollama pull "${OLLAMA_EMBEDD_MODEL:-nomic-embed-text}"
 ollama pull "${OLLAMA_CHAT_MODEL:-qwen2.5:3b}"
-ollama pull "${OLLAMA_VISION_MODEL:-moondream}"
+
+if [ -n "${OLLAMA_VISION_MODEL}" ]; then
+  ollama pull "${OLLAMA_VISION_MODEL}"
+fi
 
 wait $SERVER_PID

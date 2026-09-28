@@ -68,6 +68,9 @@ services:
   mysql:
     container_name: nest-content-hub-mysql
     image: "mysql:${MYSQL_VERSION:-8.4.11}"
+    # MySQL 8.4 domyślnie wyłącza mysql_native_password, którego wymaga
+    # sterownik `mariadb` używany przez Prisma (@prisma/adapter-mariadb).
+    command: --mysql-native-password=ON --authentication-policy=mysql_native_password
     restart: always
     environment:
       MYSQL_DATABASE: "${MYSQL_DATABASE:-nest_content_hub}"

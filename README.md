@@ -25,7 +25,7 @@ Pełna specyfikacja docelowego zakresu znajduje się w pliku [`Wymagania.md`](Wy
 - `GET /questions/:id` — status pytania i odpowiedź (`id`, `question`, `status`, `answer`; `answer` jest `null`, dopóki pytanie nie ma statusu `READY`). Celowo bez adresu e-mail w odpowiedzi
 - Seed danych startowych przy pierwszym uruchomieniu — dodane posty też przechodzą przez pełny pipeline (kolejka → embedding → Qdrant), tak samo jak posty dodane przez `POST /posts`
 - Dokumentacja OpenAPI pod `/api/docs` + wyeksportowany `api/openapi.json`
-- Testy e2e (`api/test/posts.e2e-spec.ts`, `api/test/ask.e2e-spec.ts`, `api/test/questions.e2e-spec.ts`) i jednostkowe (`api/src/posts/posts.service.spec.ts`, `api/src/questions/questions.service.spec.ts`, `api/src/ask/ask.service.spec.ts`, `api/src/worker/posts-worker.controller.spec.ts`, `api/src/worker/ask-worker.controller.spec.ts`)
+- Testy e2e (`api/test/posts.e2e-spec.ts`, `api/test/ask.e2e-spec.ts`, `api/test/questions.e2e-spec.ts`) i jednostkowe (`api/src/posts/posts.service.spec.ts`, `api/src/questions/questions.service.spec.ts`, `api/src/ask/ask.service.spec.ts`, `api/src/worker/posts-worker.controller.spec.ts`, `api/src/worker/ask-worker.controller.spec.ts`, `api/src/mail/mail.service.spec.ts`)
 - CI (GitHub Actions): lint, build, testy jednostkowe przy każdym pushu/PR
 
 **Jeszcze nie zaimplementowane** (patrz `Wymagania.md`): drugie narzędzie agenta (`query_posts`), uploady plików (PDF/audio/obraz).

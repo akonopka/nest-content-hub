@@ -337,6 +337,56 @@ describe('AskWorkerController', () => {
     expect(questionsService.markReady).not.toHaveBeenCalled();
   });
 
+  it('marks the question as failed and does not send the email when saving the answer fails', async () => {
+    const question = {
+      id: 1,
+      email: 'someone@example.com',
+      question: 'some question',
+    };
+    const questionId = question.id;
+
+    const message = { role: 'assistant', content: 'some response' };
+    const finalResponse = 'some final response';
+    const finalMessage = { role: 'assistant', content: finalResponse };
+
+    const vectors = [0.1, 0.2, 0.3];
+    const posts = [
+      {
+        email: 'someone@example.com',
+        id: 1,
+        status: PostStatus.READY,
+        created_at: new Date(),
+        updated_at: new Date(),
+        content_type: 'text/plain',
+        content: 'some example post',
+      },
+    ];
+
+    questionsService.findOne.mockResolvedValue(question);
+    ollamaService.chat.mockResolvedValueOnce(message as Message);
+    ollamaService.embed.mockResolvedValue(vectors);
+    qdrantService.search.mockResolvedValue({
+      points: posts.map((post) => ({ payload: { post_id: post.id } })),
+    });
+    postsService.findByIds.mockResolvedValue(posts);
+    ollamaService.chat.mockResolvedValueOnce(finalMessage as Message);
+    questionsService.saveAnswer.mockRejectedValue(new Error('db down'));
+
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+    await expect(
+      askWorkerController.handleQuestionAsked({ questionId }),
+    ).resolves.toBeUndefined();
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      `Failed to process question ${questionId}`,
+      expect.any(Error),
+    );
+    expect(mailService.send).not.toHaveBeenCalled();
+    expect(questionsService.markFailed).toHaveBeenCalledWith(questionId);
+    expect(questionsService.markReady).not.toHaveBeenCalled();
+  });
+
   it('marks the question as failed and logs the error when processing throws', async () => {
     const question = {
       id: 1,

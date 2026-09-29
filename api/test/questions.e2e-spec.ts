@@ -57,7 +57,10 @@ describe('Questions (e2e)', () => {
 
       prismaService.question.findUnique.mockResolvedValue(existingQuestion);
 
-      const response = await server.get(`/questions/${questionId}`).expect(200);
+      const response = await server
+        .get(`/questions/${questionId}`)
+        .auth(process.env.AUTH_LOGIN!, process.env.AUTH_PASS!)
+        .expect(200);
 
       expect(prismaService.question.findUnique).toHaveBeenCalledWith({
         where: { id: questionId },
@@ -73,11 +76,17 @@ describe('Questions (e2e)', () => {
   );
 
   it('gets a question with not existing id', async () => {
-    await server.get('/questions/999999').expect(404);
+    await server
+      .get('/questions/999999')
+      .auth(process.env.AUTH_LOGIN!, process.env.AUTH_PASS!)
+      .expect(404);
   });
 
   it('gets a question with invalid id', async () => {
-    await server.get('/questions/some_invalid_id').expect(400);
+    await server
+      .get('/questions/some_invalid_id')
+      .auth(process.env.AUTH_LOGIN!, process.env.AUTH_PASS!)
+      .expect(400);
   });
 
   afterEach(async () => {

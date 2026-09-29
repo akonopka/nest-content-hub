@@ -50,6 +50,7 @@ describe('Ask (e2e)', () => {
 
     const httpResponse = await server
       .post('/ask')
+      .auth(process.env.AUTH_LOGIN!, process.env.AUTH_PASS!)
       .send({
         question: createdQuestion.question,
         email: createdQuestion.email,
@@ -82,16 +83,25 @@ describe('Ask (e2e)', () => {
   it('asks without a question', async () => {
     await server
       .post('/ask')
+      .auth(process.env.AUTH_LOGIN!, process.env.AUTH_PASS!)
       .send({ email: 'someone@example.com' })
       .expect(400);
   });
 
   it('asks without an email', async () => {
-    await server.post('/ask').send({ question: 'some question' }).expect(400);
+    await server
+      .post('/ask')
+      .auth(process.env.AUTH_LOGIN!, process.env.AUTH_PASS!)
+      .send({ question: 'some question' })
+      .expect(400);
   });
 
   it('asks with an empty question', async () => {
-    await server.post('/ask').send({ question: '' }).expect(400);
+    await server
+      .post('/ask')
+      .auth(process.env.AUTH_LOGIN!, process.env.AUTH_PASS!)
+      .send({ question: '' })
+      .expect(400);
   });
 
   afterEach(async () => {

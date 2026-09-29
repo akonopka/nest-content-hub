@@ -54,6 +54,7 @@ describe('Posts (e2e)', () => {
 
     const postsPostResponse = await server
       .post('/posts')
+      .auth(process.env.AUTH_LOGIN!, process.env.AUTH_PASS!)
       .send({ content: createdPost.content, email: createdPost.email })
       .expect(201);
 
@@ -80,7 +81,10 @@ describe('Posts (e2e)', () => {
 
     prismaService.post.findMany.mockResolvedValue([createdPost]);
 
-    const postsGetResponse = await server.get('/posts').expect(200);
+    const postsGetResponse = await server
+      .get('/posts')
+      .auth(process.env.AUTH_LOGIN!, process.env.AUTH_PASS!)
+      .expect(200);
 
     const postsGetBody = postsGetResponse.body;
 
@@ -92,6 +96,7 @@ describe('Posts (e2e)', () => {
 
     const postsGetSingleResponse = await server
       .get('/posts/' + createdPostId)
+      .auth(process.env.AUTH_LOGIN!, process.env.AUTH_PASS!)
       .expect(200);
 
     const postsGetSingleResponseBody = postsGetSingleResponse.body;
@@ -104,22 +109,32 @@ describe('Posts (e2e)', () => {
   });
 
   it('creates a post without content', async () => {
-    await server.post('/posts').expect(400);
+    await server
+      .post('/posts')
+      .auth(process.env.AUTH_LOGIN!, process.env.AUTH_PASS!)
+      .expect(400);
   });
 
   it('creates a post with invalid email', async () => {
     await server
       .post('/posts')
+      .auth(process.env.AUTH_LOGIN!, process.env.AUTH_PASS!)
       .send({ email: 'some_invalid_email' })
       .expect(400);
   });
 
   it('gets a post with not existing id', async () => {
-    await server.get('/posts/999999').expect(404);
+    await server
+      .get('/posts/999999')
+      .auth(process.env.AUTH_LOGIN!, process.env.AUTH_PASS!)
+      .expect(404);
   });
 
   it('gets a post with invalid id', async () => {
-    await server.get('/posts/some_invalid_id').expect(400);
+    await server
+      .get('/posts/some_invalid_id')
+      .auth(process.env.AUTH_LOGIN!, process.env.AUTH_PASS!)
+      .expect(400);
   });
 
   afterEach(async () => {

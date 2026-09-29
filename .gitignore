@@ -8,5 +8,8 @@
 # environment
 .env
 
+# generated on every boot (main.ts), not a source file
+/api/openapi.json
+
 # editor
 /.vscode

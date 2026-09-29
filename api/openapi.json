@@ -19,6 +19,7 @@
             "description": ""
           }
         },
+        "summary": "Get a single post by id",
         "tags": [
           "Posts"
         ]
@@ -33,11 +34,13 @@
             "description": ""
           }
         },
+        "summary": "List all posts",
         "tags": [
           "Posts"
         ]
       },
       "post": {
+        "description": "Stores the post and queues it for asynchronous embedding (Ollama) and indexing in Qdrant, so it becomes searchable via POST /ask.",
         "operationId": "PostsController_create",
         "parameters": [],
         "requestBody": {
@@ -55,6 +58,7 @@
             "description": ""
           }
         },
+        "summary": "Add a text post",
         "tags": [
           "Posts"
         ]
@@ -62,6 +66,7 @@
     },
     "/ask": {
       "post": {
+        "description": "Queues the question for asynchronous processing by an AI agent (tool-use over the stored content) and returns immediately. Poll GET /questions/:id for the status and answer. The answer is also emailed to the given address once ready.",
         "operationId": "AskController_ask",
         "parameters": [],
         "requestBody": {
@@ -79,6 +84,7 @@
             "description": ""
           }
         },
+        "summary": "Ask a question about the stored content",
         "tags": [
           "Ask"
         ]
@@ -86,6 +92,7 @@
     },
     "/questions/{id}": {
       "get": {
+        "description": "answer stays null until status is READY. Does not return the email address on purpose.",
         "operationId": "QuestionsController_findOne",
         "parameters": [
           {
@@ -102,6 +109,7 @@
             "description": ""
           }
         },
+        "summary": "Get the status and answer for a question asked via POST /ask",
         "tags": [
           "Questions"
         ]

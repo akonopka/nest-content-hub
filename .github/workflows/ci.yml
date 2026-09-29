@@ -48,7 +48,7 @@ jobs:
           DEPLOY_KNOWN_HOSTS: ${{secrets.DEPLOY_KNOWN_HOSTS}}
       - name: Deploy
         run: |
-          ssh -i ~/.ssh/github-actions-deploy.key "${DEPLOY_SSH_USER}@${DEPLOY_SSH_HOST}" \
+          ssh -vi ~/.ssh/github-actions-deploy.key "${DEPLOY_SSH_USER}@${DEPLOY_SSH_HOST}" \
           "cd ${APP_PATH} && git pull && \
           docker compose -f docker-compose.oracle.yml up -d --build"
         env:

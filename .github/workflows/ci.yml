@@ -1,4 +1,4 @@
-name: CI
+name: CI/CD
 
 on:
   push:
@@ -30,3 +30,28 @@ jobs:
       - run: npm run build
 
       - run: npm run test:unit
+
+  deploy:
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create SSH key
+        run: |
+          mkdir -p ~/.ssh/
+          echo "${DEPLOY_SSH_KEY}" > ~/.ssh/github-actions-deploy.key
+          chmod 600 ~/.ssh/github-actions-deploy.key
+          echo "${DEPLOY_KNOWN_HOSTS}" > ~/.ssh/known_hosts
+        env:
+          DEPLOY_SSH_KEY: ${{secrets.DEPLOY_SSH_KEY}}
+          DEPLOY_KNOWN_HOSTS: ${{secrets.DEPLOY_KNOWN_HOSTS}}
+      - name: Deploy
+        run: |
+          ssh -i ~/.ssh/github-actions-deploy.key "${DEPLOY_SSH_USER}@${DEPLOY_SSH_HOST}" \
+          "cd ${APP_PATH} && git pull && \
+          docker compose -f docker-compose.oracle.yml up -d --build"
+        env:
+          DEPLOY_SSH_USER: ${{secrets.DEPLOY_SSH_USER}}
+          DEPLOY_SSH_HOST: ${{secrets.DEPLOY_SSH_HOST}}
+          APP_PATH: "nest-content-hub"

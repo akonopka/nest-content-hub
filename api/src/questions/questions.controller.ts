@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { QuestionsService } from './questions.service';
 import { QuestionGetDto } from './question.dto';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Controller('questions')
 export class QuestionsController {
@@ -19,6 +19,9 @@ export class QuestionsController {
     description:
       'answer stays null until status is READY. Does not return the email address on purpose.',
   })
+  @ApiResponse({ status: 200, description: 'Question found' })
+  @ApiResponse({ status: 404, description: 'Question not found' })
+  @ApiResponse({ status: 400, description: 'Invalid id' })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<QuestionGetDto> {

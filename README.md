@@ -24,12 +24,24 @@ Pełna specyfikacja docelowego zakresu znajduje się w pliku [`Wymagania.md`](Wy
 - `POST /ask` — pytanie w naturalnym języku i email; zapisuje pytanie do MySQL ze statusem `PENDING` i zwraca `202` z `questionId` od razu, przetwarzanie idzie asynchronicznie przez osobną kolejkę i workera. W workerze narzędzie `search_content` (embedding pytania → Qdrant → treść z MySQL) jest wywoływane zawsze, z pytaniem od modelu jeśli sam o nie poprosił, albo surowym pytaniem użytkownika w przeciwnym razie (deterministyczny fallback) — odpowiedź sklejona przez LLM na podstawie wyniku. Model ma system prompt instruujący go do odpowiadania po polsku. Odpowiedź jest zapisywana w bazie (przed wysyłką) i wysyłana mailem na podany adres (wersja tekstowa i HTML, treść w HTML jest escapowana). Status pytania przechodzi `PENDING` → `PROCESSING` → `READY` (albo `FAILED` przy błędzie przetwarzania lub nieudanej wysyłce maila)
 - `GET /questions/:id` — status pytania i odpowiedź (`id`, `question`, `status`, `answer`; `answer` jest `null`, dopóki pytanie nie ma statusu `READY`). Celowo bez adresu e-mail w odpowiedzi
 - Rate limiting (`@nestjs/throttler`): globalnie 10 żądań/minutę na adres IP, a `POST /ask` dodatkowo zawężone do 3 żądań/5 minut (najdroższy endpoint — uruchamia model i wysyła mail)
+- Całe API chronione przez HTTP Basic Auth (dane logowania w sekcji "Demo na żywo" niżej)
 - Seed danych startowych przy pierwszym uruchomieniu — dodane posty też przechodzą przez pełny pipeline (kolejka → embedding → Qdrant), tak samo jak posty dodane przez `POST /posts`
 - Dokumentacja OpenAPI pod `/api/docs` + wyeksportowany `api/openapi.json`
 - Testy e2e (`api/test/posts.e2e-spec.ts`, `api/test/ask.e2e-spec.ts`, `api/test/questions.e2e-spec.ts`) i jednostkowe (`api/src/posts/posts.service.spec.ts`, `api/src/questions/questions.service.spec.ts`, `api/src/ask/ask.service.spec.ts`, `api/src/worker/posts-worker.controller.spec.ts`, `api/src/worker/ask-worker.controller.spec.ts`, `api/src/mail/mail.service.spec.ts`)
 - CI (GitHub Actions): lint, build, testy jednostkowe przy każdym pushu/PR
 
 **Jeszcze nie zaimplementowane** (patrz `Wymagania.md`): drugie narzędzie agenta (`query_posts`), uploady plików (PDF/audio/obraz).
+
+## Demo na żywo
+
+http://92.5.44.0:3000/api/docs — interaktywna dokumentacja (Swagger), stąd najwygodniej przetestować `/ask` i `/posts`
+
+API jest chronione przez HTTP Basic Auth (przeglądarka poprosi o dane logowania raz, przy pierwszym wejściu):
+
+```
+login: demo
+hasło: 7868b144b473
+```
 
 ## Uruchomienie
 

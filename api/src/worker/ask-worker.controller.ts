@@ -68,13 +68,13 @@ export class AskWorkerController {
             toolResult = await this.searchContent(question);
           } else if (toolName === 'queryPosts') {
             const status = toolCall.function.arguments.status as PostStatus;
-            const date_from = toolCall.function.arguments.date_from
-              ? new Date(toolCall.function.arguments.date_from)
+            const dateFrom = toolCall.function.arguments.dateFrom
+              ? new Date(toolCall.function.arguments.dateFrom)
               : undefined;
-            const date_to = toolCall.function.arguments.date_to
-              ? new Date(toolCall.function.arguments.date_to)
+            const dateTo = toolCall.function.arguments.dateTo
+              ? new Date(toolCall.function.arguments.dateTo)
               : undefined;
-            toolResult = await this.queryPosts(status, date_from, date_to);
+            toolResult = await this.queryPosts(status, dateFrom, dateTo);
           }
           fullMessages.push({
             role: 'tool',
@@ -153,9 +153,9 @@ nest-content-hub
 
   async queryPosts(
     status?: PostStatus,
-    date_from?: Date,
-    date_to?: Date,
+    dateFrom?: Date,
+    dateTo?: Date,
   ): Promise<Post[]> {
-    return this.postsService.queryPosts(status, date_from, date_to);
+    return this.postsService.queryPosts(status, dateFrom, dateTo);
   }
 }

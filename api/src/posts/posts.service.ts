@@ -62,8 +62,8 @@ export class PostsService {
 
   async queryPosts(
     status?: PostStatus,
-    date_from?: Date,
-    date_to?: Date,
+    dateFrom?: Date,
+    dateTo?: Date,
   ): Promise<Post[]> {
     let query: { where: Prisma.PostWhereInput } = {
       where: { status: {}, created_at: {} },
@@ -75,12 +75,12 @@ export class PostsService {
 
     const createdAtFilter: Prisma.DateTimeFilter<'Post'> = {};
 
-    if (date_from) {
-      createdAtFilter.gte = date_from;
+    if (dateFrom) {
+      createdAtFilter.gte = dateFrom;
     }
 
-    if (date_to) {
-      createdAtFilter.lte = date_to;
+    if (dateTo) {
+      createdAtFilter.lte = dateTo;
     }
 
     query.where.created_at = createdAtFilter;

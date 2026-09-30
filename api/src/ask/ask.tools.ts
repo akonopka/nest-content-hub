@@ -35,12 +35,12 @@ export const queryContentTool: Tool = {
           description:
             'Filter posts by status. Omit to include posts with any status.',
         },
-        date_from: {
+        dateFrom: {
           type: 'string',
           description:
             'Only include posts created on or after this date (ISO 8601, e.g. "2026-09-01"). Omit for no lower bound.',
         },
-        date_to: {
+        dateTo: {
           type: 'string',
           description:
             'Only include posts created on or before this date (ISO 8601, e.g. "2026-09-30"). Omit for no upper bound.',

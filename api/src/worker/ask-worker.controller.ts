@@ -50,7 +50,7 @@ export class AskWorkerController {
       const fullMessages = [...messages, message];
 
       if (!message.tool_calls || message.tool_calls.length === 0) {
-        let toolName = 'search_content';
+        let toolName = 'searchContent';
         let toolResult = await this.searchContent(questionObj.question);
 
         fullMessages.push({
@@ -63,10 +63,10 @@ export class AskWorkerController {
           const toolName = toolCall.function.name;
           let toolResult;
 
-          if (toolName === 'search_content') {
+          if (toolName === 'searchContent') {
             const question = toolCall.function.arguments.question as string;
             toolResult = await this.searchContent(question);
-          } else if (toolName === 'query_posts') {
+          } else if (toolName === 'queryPosts') {
             const status = toolCall.function.arguments.status as PostStatus;
             const date_from = toolCall.function.arguments.date_from
               ? new Date(toolCall.function.arguments.date_from)

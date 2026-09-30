@@ -4,7 +4,7 @@ import { PostStatus } from '../generated/prisma/enums';
 export const searchContentTool: Tool = {
   type: 'function',
   function: {
-    name: 'search_content',
+    name: 'searchContent',
     description:
       "Search the user's stored posts by meaning to find content relevant to their question",
     parameters: {
@@ -23,9 +23,9 @@ export const searchContentTool: Tool = {
 export const queryContentTool: Tool = {
   type: 'function',
   function: {
-    name: 'query_posts',
+    name: 'queryPosts',
     description:
-      'Query stored posts by status and/or creation date range to answer questions about metadata, such as how many posts have a given status or which posts were created in a given period. Not for finding content by meaning — use search_content for that.',
+      'Query stored posts by status and/or creation date range to answer questions about metadata, such as how many posts have a given status or which posts were created in a given period. Not for finding content by meaning — use searchContent for that.',
     parameters: {
       type: 'object',
       properties: {

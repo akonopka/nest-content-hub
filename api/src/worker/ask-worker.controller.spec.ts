@@ -128,13 +128,13 @@ describe('AskWorkerController', () => {
           tool_calls: [
             {
               function: {
-                name: 'search_content',
+                name: 'searchContent',
                 arguments: { question: toolQuestion },
               },
             },
             {
               function: {
-                name: 'query_posts',
+                name: 'queryPosts',
                 arguments: {
                   status: 'READY',
                   date_from: '2026-09-01',
@@ -208,14 +208,14 @@ describe('AskWorkerController', () => {
       {
         role: 'tool',
         content: JSON.stringify(posts1),
-        tool_name: 'search_content',
+        tool_name: 'searchContent',
       },
       ...(toolCalledByModel
         ? [
             {
               role: 'tool',
               content: JSON.stringify(posts2),
-              tool_name: 'query_posts',
+              tool_name: 'queryPosts',
             },
           ]
         : []),
@@ -317,7 +317,7 @@ describe('AskWorkerController', () => {
       tool_calls: [
         {
           function: {
-            name: 'search_content',
+            name: 'searchContent',
             arguments: { question: toolQuestion },
           },
         },
@@ -361,7 +361,7 @@ describe('AskWorkerController', () => {
       {
         role: 'tool',
         content: JSON.stringify(posts),
-        tool_name: 'search_content',
+        tool_name: 'searchContent',
       },
     ];
 

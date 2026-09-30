@@ -84,9 +84,9 @@ curl http://localhost:3000/questions/1
 ## Testy
 
 ```bash
-# jednostkowe (szybkie, bez zależności od Dockera)
+# jednostkowe (nie wymagają innych serwisów — MySQL/RabbitMQ/Ollama/Qdrant są zamockowane)
 docker compose exec api sh -c "npm run test:unit"
 
-# e2e (wymagają uruchomionego docker compose)
+# e2e (dotykają prawdziwej bazy/Qdranta, wymagają wszystkich serwisów z docker compose)
 docker compose exec api sh -c "npm run test:e2e"
 ```

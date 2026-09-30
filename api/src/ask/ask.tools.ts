@@ -26,7 +26,7 @@ export const queryContentTool: Tool = {
   function: {
     name: 'queryPosts',
     description:
-      'Query stored posts by status and/or creation date range to answer questions about metadata, such as how many posts have a given status, which posts were created in a given period, or which post is the newest/oldest (use orderBy with limit: 1 for that). Not for finding content by meaning — use searchContent for that.',
+      'Query stored posts by status and/or creation date range to answer questions about metadata, such as how many posts have a given status, which posts were created in a given period, or which post is the newest/oldest (use orderBy with limit: 1 only for that specific question, never for counting). Not for finding content by meaning — use searchContent for that.',
     parameters: {
       type: 'object',
       properties: {
@@ -55,7 +55,7 @@ export const queryContentTool: Tool = {
         limit: {
           type: 'number',
           description:
-            'Maximum number of posts to return. Always set this to 1 together with orderBy when asked for the single newest or oldest post. Omit for no limit.',
+            'Maximum number of posts to return. Set this to 1 together with orderBy ONLY when asked for the single newest or oldest post. Do NOT set it when counting posts or answering "how many" — that needs the full matching list, not just one. Omit for no limit.',
         },
       },
     },

@@ -11,7 +11,7 @@ export class AskController {
 
   @Post()
   @HttpCode(202)
-  @Throttle({ default: { limit: 3, ttl: 300000 } })
+  @Throttle({ default: { limit: 10, ttl: 600000 } })
   @ApiOperation({
     summary: 'Ask a question about the stored content',
     description:

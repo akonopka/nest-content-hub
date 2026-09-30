@@ -8,6 +8,13 @@ export interface PostCreatedEvent {
   postId: number;
 }
 
+export const OrderPostsBy = {
+  CREATED_AT_ASC: 'CREATED_AT_ASC',
+  CREATED_AT_DESC: 'CREATED_AT_DESC',
+} as const;
+
+export type OrderPostsBy = (typeof OrderPostsBy)[keyof typeof OrderPostsBy];
+
 @Injectable()
 export class PostsService {
   constructor(
@@ -64,8 +71,14 @@ export class PostsService {
     status?: PostStatus,
     dateFrom?: Date,
     dateTo?: Date,
+    orderBy?: OrderPostsBy,
+    limit?: number,
   ): Promise<Post[]> {
-    let query: { where: Prisma.PostWhereInput } = {
+    let query: {
+      where: Prisma.PostWhereInput;
+      take?: number;
+      orderBy?: Prisma.PostOrderByWithRelationInput;
+    } = {
       where: { status: {}, created_at: {} },
     };
 
@@ -84,6 +97,16 @@ export class PostsService {
     }
 
     query.where.created_at = createdAtFilter;
+
+    if (orderBy == OrderPostsBy.CREATED_AT_ASC) {
+      query.orderBy = { created_at: 'asc' };
+    } else if (orderBy == OrderPostsBy.CREATED_AT_DESC) {
+      query.orderBy = { created_at: 'desc' };
+    }
+
+    if (limit && Number.isInteger(limit) && limit > 0) {
+      query.take = limit;
+    }
 
     return this.prismaService.post.findMany(query);
   }

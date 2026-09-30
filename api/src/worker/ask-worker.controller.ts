@@ -2,12 +2,13 @@ import { Controller } from '@nestjs/common';
 import { EventPattern } from '@nestjs/microservices';
 import { type QuestionAskedEvent } from '../ask/ask.service';
 import { QuestionsService } from '../questions/questions.service';
-import { Message, ToolCall } from 'ollama';
+import { Message } from 'ollama';
 import { Post, PostStatus } from '../generated/prisma/client';
 import { OllamaService } from '../ollama/ollama.service';
 import { searchContentTool, queryContentTool } from '../ask/ask.tools';
 import { QdrantService } from '../qdrant/qdrant.service';
 import { PostsService } from '../posts/posts.service';
+import { type OrderPostsBy } from '../posts/posts.service';
 import { MailService } from '../mail/mail.service';
 import escapeHtml from 'escape-html';
 
@@ -74,7 +75,15 @@ export class AskWorkerController {
             const dateTo = toolCall.function.arguments.dateTo
               ? new Date(toolCall.function.arguments.dateTo)
               : undefined;
-            toolResult = await this.queryPosts(status, dateFrom, dateTo);
+            const orderBy = toolCall.function.arguments.orderBy;
+            const limit = toolCall.function.arguments.limit;
+            toolResult = await this.queryPosts(
+              status,
+              dateFrom,
+              dateTo,
+              orderBy,
+              limit,
+            );
           }
           fullMessages.push({
             role: 'tool',
@@ -155,7 +164,15 @@ nest-content-hub
     status?: PostStatus,
     dateFrom?: Date,
     dateTo?: Date,
+    orderBy?: OrderPostsBy,
+    limit?: number,
   ): Promise<Post[]> {
-    return this.postsService.queryPosts(status, dateFrom, dateTo);
+    return this.postsService.queryPosts(
+      status,
+      dateFrom,
+      dateTo,
+      orderBy,
+      limit,
+    );
   }
 }

@@ -3,7 +3,7 @@ import { AskWorkerController } from './ask-worker.controller';
 import { QuestionsService } from '../questions/questions.service';
 import { OllamaService } from '../ollama/ollama.service';
 import { QdrantService } from '../qdrant/qdrant.service';
-import { PostsService } from '../posts/posts.service';
+import { OrderPostsBy, PostsService } from '../posts/posts.service';
 import { MailService } from '../mail/mail.service';
 
 import { type Message } from 'ollama';
@@ -139,6 +139,8 @@ describe('AskWorkerController', () => {
                   status: 'READY',
                   dateFrom: '2026-09-01',
                   dateTo: '2026-09-30',
+                  orderBy: OrderPostsBy.CREATED_AT_ASC,
+                  limit: 10,
                 },
               },
             },
@@ -266,6 +268,8 @@ describe('AskWorkerController', () => {
         'READY',
         new Date('2026-09-01'),
         new Date('2026-09-30'),
+        OrderPostsBy.CREATED_AT_ASC,
+        10,
       );
     }
 

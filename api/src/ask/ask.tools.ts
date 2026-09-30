@@ -1,4 +1,5 @@
 import type { Tool } from 'ollama';
+import { OrderPostsBy } from '../posts/posts.service';
 import { PostStatus } from '../generated/prisma/enums';
 
 export const searchContentTool: Tool = {
@@ -25,7 +26,7 @@ export const queryContentTool: Tool = {
   function: {
     name: 'queryPosts',
     description:
-      'Query stored posts by status and/or creation date range to answer questions about metadata, such as how many posts have a given status or which posts were created in a given period. Not for finding content by meaning — use searchContent for that.',
+      'Query stored posts by status and/or creation date range to answer questions about metadata, such as how many posts have a given status, which posts were created in a given period, or which post is the newest/oldest (use orderBy with limit: 1 for that). Not for finding content by meaning — use searchContent for that.',
     parameters: {
       type: 'object',
       properties: {
@@ -44,6 +45,17 @@ export const queryContentTool: Tool = {
           type: 'string',
           description:
             'Only include posts created on or before this date (ISO 8601, e.g. "2026-09-30"). Omit for no upper bound.',
+        },
+        orderBy: {
+          type: 'string',
+          enum: Object.values(OrderPostsBy),
+          description:
+            'Sort the results by creation date, ascending or descending. When asked for the single newest or oldest post, always set this together with limit: 1 — never use orderBy alone for that question, or you will get the whole sorted list instead of one post. Omit for no particular order.',
+        },
+        limit: {
+          type: 'number',
+          description:
+            'Maximum number of posts to return. Always set this to 1 together with orderBy when asked for the single newest or oldest post. Omit for no limit.',
         },
       },
     },

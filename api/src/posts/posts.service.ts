@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Post, PostStatus } from '../generated/prisma/client';
+import { Post, PostStatus, Prisma } from '../generated/prisma/client';
 import { PostCreateDto } from './post.dto';
 import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
 
@@ -58,5 +58,33 @@ export class PostsService {
 
   async markReady(postId: number): Promise<void> {
     await this.updateStatus(postId, PostStatus.READY);
+  }
+
+  async queryPosts(
+    status?: PostStatus,
+    date_from?: Date,
+    date_to?: Date,
+  ): Promise<Post[]> {
+    let query: { where: Prisma.PostWhereInput } = {
+      where: { status: {}, created_at: {} },
+    };
+
+    if (status) {
+      query.where.status = { equals: status };
+    }
+
+    const createdAtFilter: Prisma.DateTimeFilter<'Post'> = {};
+
+    if (date_from) {
+      createdAtFilter.gte = date_from;
+    }
+
+    if (date_to) {
+      createdAtFilter.lte = date_to;
+    }
+
+    query.where.created_at = createdAtFilter;
+
+    return this.prismaService.post.findMany(query);
   }
 }

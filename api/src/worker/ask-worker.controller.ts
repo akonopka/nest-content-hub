@@ -2,10 +2,10 @@ import { Controller } from '@nestjs/common';
 import { EventPattern } from '@nestjs/microservices';
 import { type QuestionAskedEvent } from '../ask/ask.service';
 import { QuestionsService } from '../questions/questions.service';
-import { Message } from 'ollama';
-import { Post } from '../generated/prisma/client';
+import { Message, ToolCall } from 'ollama';
+import { Post, PostStatus } from '../generated/prisma/client';
 import { OllamaService } from '../ollama/ollama.service';
-import { searchContentTool } from '../ask/ask.tools';
+import { searchContentTool, queryContentTool } from '../ask/ask.tools';
 import { QdrantService } from '../qdrant/qdrant.service';
 import { PostsService } from '../posts/posts.service';
 import { MailService } from '../mail/mail.service';
@@ -44,28 +44,46 @@ export class AskWorkerController {
       ];
       const message: Message = await this.ollamaService.chat(messages, [
         searchContentTool,
+        queryContentTool,
       ]);
 
-      let question: string;
+      const fullMessages = [...messages, message];
 
       if (!message.tool_calls || message.tool_calls.length === 0) {
-        question = questionObj.question;
+        let toolName = 'search_content';
+        let toolResult = await this.searchContent(questionObj.question);
+
+        fullMessages.push({
+          role: 'tool',
+          content: JSON.stringify(toolResult),
+          tool_name: toolName,
+        });
       } else {
-        const toolCall = message.tool_calls[0];
-        question = toolCall.function.arguments.question as string;
+        for (const toolCall of message.tool_calls) {
+          const toolName = toolCall.function.name;
+          let toolResult;
+
+          if (toolName === 'search_content') {
+            const question = toolCall.function.arguments.question as string;
+            toolResult = await this.searchContent(question);
+          } else if (toolName === 'query_posts') {
+            const status = toolCall.function.arguments.status as PostStatus;
+            const date_from = toolCall.function.arguments.date_from
+              ? new Date(toolCall.function.arguments.date_from)
+              : undefined;
+            const date_to = toolCall.function.arguments.date_to
+              ? new Date(toolCall.function.arguments.date_to)
+              : undefined;
+            toolResult = await this.queryPosts(status, date_from, date_to);
+          }
+          fullMessages.push({
+            role: 'tool',
+            content: JSON.stringify(toolResult),
+            tool_name: toolName,
+          });
+        }
       }
 
-      const posts = await this.searchContent(question);
-
-      const fullMessages = [
-        ...messages,
-        message,
-        {
-          role: 'tool',
-          content: JSON.stringify(posts),
-          tool_name: 'search_content',
-        },
-      ];
       const finalMessage = await this.ollamaService.chat(fullMessages);
 
       const content = finalMessage.content;
@@ -131,5 +149,13 @@ nest-content-hub
     );
 
     return this.postsService.findByIds(postIds);
+  }
+
+  async queryPosts(
+    status?: PostStatus,
+    date_from?: Date,
+    date_to?: Date,
+  ): Promise<Post[]> {
+    return this.postsService.queryPosts(status, date_from, date_to);
   }
 }

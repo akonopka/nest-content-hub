@@ -8,7 +8,7 @@ import { MailService } from '../mail/mail.service';
 
 import { type Message } from 'ollama';
 import { PostStatus } from '../generated/prisma/enums';
-import { searchContentTool } from '../ask/ask.tools';
+import { searchContentTool, queryContentTool } from '../ask/ask.tools';
 
 describe('AskWorkerController', () => {
   let askWorkerController: AskWorkerController;
@@ -21,7 +21,7 @@ describe('AskWorkerController', () => {
     saveAnswer: jest.Mock;
   };
   let ollamaService: { embed: jest.Mock; chat: jest.Mock };
-  let postsService: { findByIds: jest.Mock };
+  let postsService: { findByIds: jest.Mock; queryPosts: jest.Mock };
   let qdrantService: { search: jest.Mock };
   let mailService: { send: jest.Mock };
 
@@ -34,7 +34,7 @@ describe('AskWorkerController', () => {
       saveAnswer: jest.fn(),
     };
     ollamaService = { embed: jest.fn(), chat: jest.fn() };
-    postsService = { findByIds: jest.fn() };
+    postsService = { findByIds: jest.fn(), queryPosts: jest.fn() };
     qdrantService = { search: jest.fn() };
     mailService = { send: jest.fn() };
 
@@ -132,6 +132,16 @@ describe('AskWorkerController', () => {
                 arguments: { question: toolQuestion },
               },
             },
+            {
+              function: {
+                name: 'query_posts',
+                arguments: {
+                  status: 'READY',
+                  date_from: '2026-09-01',
+                  date_to: '2026-09-30',
+                },
+              },
+            },
           ],
         }
       : { role: 'assistant', content: response };
@@ -142,7 +152,7 @@ describe('AskWorkerController', () => {
 
     const vectors = [0.1, 0.2, 0.3];
 
-    const posts = [
+    const posts1 = [
       {
         email: 'someone@example.com',
         id: 1,
@@ -155,6 +165,27 @@ describe('AskWorkerController', () => {
       {
         email: 'someoneelse@example.com',
         id: 2,
+        status: PostStatus.READY,
+        created_at: new Date(),
+        updated_at: new Date(),
+        content_type: 'text/plain',
+        content: 'some another example post',
+      },
+    ];
+
+    const posts2 = [
+      {
+        email: 'someone@example.com',
+        id: 3,
+        status: PostStatus.READY,
+        created_at: new Date(),
+        updated_at: new Date(),
+        content_type: 'text/plain',
+        content: 'some example post',
+      },
+      {
+        email: 'someoneelse@example.com',
+        id: 4,
         status: PostStatus.READY,
         created_at: new Date(),
         updated_at: new Date(),
@@ -176,9 +207,18 @@ describe('AskWorkerController', () => {
       message,
       {
         role: 'tool',
-        content: JSON.stringify(posts),
+        content: JSON.stringify(posts1),
         tool_name: 'search_content',
       },
+      ...(toolCalledByModel
+        ? [
+            {
+              role: 'tool',
+              content: JSON.stringify(posts2),
+              tool_name: 'query_posts',
+            },
+          ]
+        : []),
     ];
 
     questionsService.findOne.mockResolvedValue(question);
@@ -187,9 +227,13 @@ describe('AskWorkerController', () => {
 
     ollamaService.embed.mockResolvedValue(vectors);
     qdrantService.search.mockResolvedValue({
-      points: posts.map((post) => ({ payload: { post_id: post.id } })),
+      points: posts1.map((post) => ({ payload: { post_id: post.id } })),
     });
-    postsService.findByIds.mockResolvedValue(posts);
+    postsService.findByIds.mockResolvedValue(posts1);
+
+    if (toolCalledByModel) {
+      postsService.queryPosts.mockResolvedValue(posts2);
+    }
 
     ollamaService.chat.mockResolvedValueOnce(finalMessage as Message);
 
@@ -202,7 +246,7 @@ describe('AskWorkerController', () => {
     expect(ollamaService.chat).toHaveBeenNthCalledWith(
       1,
       [systemMessage, userMessage],
-      [searchContentTool],
+      [searchContentTool, queryContentTool],
     );
 
     expect(ollamaService.embed).toHaveBeenCalledWith(expectedEmbedArg);
@@ -214,8 +258,16 @@ describe('AskWorkerController', () => {
     );
 
     expect(postsService.findByIds).toHaveBeenCalledWith(
-      posts.map((post) => post.id),
+      posts1.map((post) => post.id),
     );
+
+    if (toolCalledByModel) {
+      expect(postsService.queryPosts).toHaveBeenCalledWith(
+        'READY',
+        new Date('2026-09-01'),
+        new Date('2026-09-30'),
+      );
+    }
 
     expect(ollamaService.chat).toHaveBeenNthCalledWith(2, messages);
 
@@ -334,7 +386,7 @@ describe('AskWorkerController', () => {
     expect(ollamaService.chat).toHaveBeenNthCalledWith(
       1,
       [systemMessage, userMessage],
-      [searchContentTool],
+      [searchContentTool, queryContentTool],
     );
 
     expect(ollamaService.embed).toHaveBeenCalledWith(toolQuestion);

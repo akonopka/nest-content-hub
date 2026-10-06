@@ -121,6 +121,16 @@ services:
     volumes:
       - ./minio:/data
 
+  localstack:
+    container_name: nest-content-hub-localstack
+    image: "localstack/localstack:latest"
+    profiles: ["test"]
+    environment:
+      SERVICES: "s3"
+      LOCALSTACK_AUTH_TOKEN: "${LOCALSTACK_AUTH_TOKEN}"
+    ports:
+      - "4566:4566"
+
   rabbitmq:
     container_name: nest-content-hub-rabbitmq
     image: "rabbitmq:${RABBITMQ_VERSION:-3-management}"

@@ -9,6 +9,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthMiddleware } from './auth/auth.middleware';
 import { S3Module } from './s3/s3.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { S3Module } from './s3/s3.module';
       ],
     }),
     S3Module,
+    UploadsModule,
   ],
   providers: [
     {

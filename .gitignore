@@ -13,3 +13,5 @@
 
 # editor
 /.vscode
+terraform/.terraform/
+terraform/*.tfstate*

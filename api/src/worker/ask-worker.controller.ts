@@ -66,12 +66,6 @@ export class AskWorkerController {
       } else {
         for (const toolCall of message.tool_calls) {
           const toolName = toolCall.function.name;
-          this.logger.log(
-            'Tool called:',
-            toolName,
-            'with args:',
-            toolCall.function.arguments,
-          );
           let toolResult;
 
           if (toolName === 'searchContent') {

@@ -1,4 +1,4 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Logger } from '@nestjs/common';
 import { EventPattern } from '@nestjs/microservices';
 import { type PostCreatedEvent, PostsService } from '../posts/posts.service';
 import {
@@ -13,11 +13,15 @@ import { Post } from '../generated/prisma/client';
 
 @Controller()
 export class PostsWorkerController {
+  private readonly logger: Logger;
+
   constructor(
     private readonly postService: PostsService,
     private readonly ollamaService: OllamaService,
     private readonly qdrantService: QdrantService,
-  ) {}
+  ) {
+    this.logger = new Logger(PostsWorkerController.name);
+  }
 
   @EventPattern('post.created')
   async handlePostCreated(data: PostCreatedEvent): Promise<void> {
@@ -41,7 +45,7 @@ export class PostsWorkerController {
           process.env.OLLAMA_EMBEDD_MODEL as EmbeddingModel,
         )
       ) {
-        console.error(
+        this.logger.error(
           `Unsupported embedding model: ${process.env.OLLAMA_EMBEDD_MODEL}`,
         );
         return;
@@ -71,7 +75,7 @@ export class PostsWorkerController {
 
       await this.postService.markReady(postId);
     } catch (error) {
-      console.error(`Failed to process post ${data.postId}`, error);
+      this.logger.error(`Failed to process post ${data.postId}`, error);
       if (post) {
         await this.postService.markFailed(post.id);
       }

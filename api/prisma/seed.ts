@@ -2,6 +2,7 @@ import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { PrismaClient } from '../src/generated/prisma/client';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
+import { Logger } from '@nestjs/common';
 
 // import { NestFactory } from '@nestjs/core';
 // import { AppModule } from '../src/app.module';
@@ -60,8 +61,9 @@ main()
     await prisma.$disconnect();
     await client.close();
   })
-  .catch(async (e) => {
-    console.error(e);
+  .catch(async (error) => {
+    const logger = new Logger('Seed');
+    logger.error(error);
     await prisma.$disconnect();
     await client.close();
     process.exit(1);

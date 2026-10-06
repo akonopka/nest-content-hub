@@ -9,6 +9,7 @@ import { MailService } from '../mail/mail.service';
 import { type Message } from 'ollama';
 import { PostStatus } from '../generated/prisma/enums';
 import { searchContentTool, queryContentTool } from '../ask/ask.tools';
+import { Logger } from '@nestjs/common';
 
 describe('AskWorkerController', () => {
   let askWorkerController: AskWorkerController;
@@ -564,7 +565,9 @@ describe('AskWorkerController', () => {
     ollamaService.chat.mockResolvedValueOnce(finalMessage as Message);
     questionsService.saveAnswer.mockRejectedValue(new Error('db down'));
 
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    const consoleSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation();
 
     await expect(
       askWorkerController.handleQuestionAsked({ questionId }),
@@ -591,7 +594,9 @@ describe('AskWorkerController', () => {
 
     ollamaService.chat.mockRejectedValue(new Error('ollama down'));
 
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    const consoleSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation();
 
     await expect(
       askWorkerController.handleQuestionAsked({ questionId }),

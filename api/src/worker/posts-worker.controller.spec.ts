@@ -3,6 +3,7 @@ import { PostsWorkerController } from './posts-worker.controller';
 import { PostsService } from '../posts/posts.service';
 import { OllamaService } from '../ollama/ollama.service';
 import { QdrantService } from '../qdrant/qdrant.service';
+import { Logger } from '@nestjs/common';
 
 describe('PostsWorkerController', () => {
   let postsWorkerController: PostsWorkerController;
@@ -42,7 +43,9 @@ describe('PostsWorkerController', () => {
     const postId = 1;
 
     postsService.findOne.mockResolvedValue(null);
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    const consoleSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation();
 
     await expect(
       postsWorkerController.handlePostCreated({ postId }),
@@ -60,7 +63,9 @@ describe('PostsWorkerController', () => {
     const postId = 1;
 
     postsService.findOne.mockResolvedValue({ id: postId });
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    const consoleSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation();
 
     await expect(
       postsWorkerController.handlePostCreated({ postId }),
@@ -129,7 +134,9 @@ describe('PostsWorkerController', () => {
         qdrantService.upsert.mockRejectedValue(new Error('upsert failed'));
       }
 
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation();
 
       await expect(
         postsWorkerController.handlePostCreated({ postId }),

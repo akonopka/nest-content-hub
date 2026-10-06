@@ -1,4 +1,4 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Logger } from '@nestjs/common';
 import { EventPattern } from '@nestjs/microservices';
 import { type QuestionAskedEvent } from '../ask/ask.service';
 import { QuestionsService } from '../questions/questions.service';
@@ -14,13 +14,17 @@ import escapeHtml from 'escape-html';
 
 @Controller()
 export class AskWorkerController {
+  private readonly logger: Logger;
+
   constructor(
     private readonly questionsService: QuestionsService,
     private readonly ollamaService: OllamaService,
     private readonly qdrantService: QdrantService,
     private readonly postsService: PostsService,
     private readonly mailService: MailService,
-  ) {}
+  ) {
+    this.logger = new Logger(AskWorkerController.name);
+  }
 
   @EventPattern('question.asked')
   async handleQuestionAsked(data: QuestionAskedEvent): Promise<void> {
@@ -62,7 +66,12 @@ export class AskWorkerController {
       } else {
         for (const toolCall of message.tool_calls) {
           const toolName = toolCall.function.name;
-          console.log('Tool called:', toolName, 'with args:', toolCall.function.arguments);
+          this.logger.log(
+            'Tool called:',
+            toolName,
+            'with args:',
+            toolCall.function.arguments,
+          );
           let toolResult;
 
           if (toolName === 'searchContent') {
@@ -139,7 +148,7 @@ nest-content-hub
         await this.questionsService.markFailed(questionId);
       }
     } catch (error) {
-      console.error(`Failed to process question ${questionId}`, error);
+      this.logger.error(`Failed to process question ${questionId}`, error);
       await this.questionsService.markFailed(questionId);
     }
   }

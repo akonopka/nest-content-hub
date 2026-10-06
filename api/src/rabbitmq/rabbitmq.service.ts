@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import type { PostCreatedEvent } from '../posts/posts.service';
@@ -6,12 +6,16 @@ import type { QuestionAskedEvent } from '../ask/ask.service';
 
 @Injectable()
 export class RabbitMQService {
+  private readonly logger: Logger;
+
   constructor(
     @Inject('RABBITMQ_EMBEDDING_CLIENT')
     private readonly rabbitMQEmbeddingClient: ClientProxy,
     @Inject('RABBITMQ_ASK_CLIENT')
     private readonly rabbitMQAskClient: ClientProxy,
-  ) {}
+  ) {
+    this.logger = new Logger(RabbitMQService.name);
+  }
 
   async sendToQueue(
     pattern: string,
@@ -20,8 +24,8 @@ export class RabbitMQService {
   ) {
     try {
       await firstValueFrom(client.emit(pattern, data));
-    } catch (err) {
-      console.error('Failed to send to queue:', err);
+    } catch (error) {
+      this.logger.error('Failed to send to queue:', error);
     }
   }
   sendToEmbeddingQueue(pattern: string, data: PostCreatedEvent) {

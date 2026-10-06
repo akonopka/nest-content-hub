@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import nodemailer from 'nodemailer';
 
 @Injectable()
@@ -7,6 +7,8 @@ export class MailService {
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT),
   });
+
+  private readonly logger = new Logger(MailService.name);
 
   async send(
     to: string,
@@ -23,10 +25,10 @@ export class MailService {
         html,
       });
 
-      console.log('Message sent: %s', info.messageId);
+      this.logger.log('Message sent: %s', info.messageId);
       return true;
     } catch (err) {
-      console.error('Error while sending mail:', err);
+      this.logger.error('Error while sending mail:', err);
       return false;
     }
   }

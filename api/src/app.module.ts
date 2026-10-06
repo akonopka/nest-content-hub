@@ -8,6 +8,7 @@ import { QdrantModule } from './qdrant/qdrant.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthMiddleware } from './auth/auth.middleware';
+import { S3Module } from './s3/s3.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { AuthMiddleware } from './auth/auth.middleware';
         },
       ],
     }),
+    S3Module,
   ],
   providers: [
     {

@@ -13,12 +13,14 @@ Pełna specyfikacja docelowego zakresu znajduje się w pliku [`Wymagania.md`](Wy
 - **RabbitMQ** — kolejki zadań (embedding, obsługa pytań do `/ask`)
 - **Ollama** — lokalny model do liczenia embeddingów
 - **Qdrant** — baza wektorowa
+- **MinIO** (API kompatybilne z S3) — magazyn uploadów, konsola pod `http://localhost:9001`
 - **MailHog** + `nodemailer` — wysyłka odpowiedzi mailem (podgląd wiadomości pod `http://localhost:8025`)
 - Docker Compose — całe środowisko
 
 ## Co obecnie działa
 
 - `POST /posts` — dodanie treści tekstowej, zapis do MySQL ze statusem `PENDING`
+- `POST /uploads` — przyjmuje plik (multipart) i zapisuje go do MinIO pod losowym kluczem, zwraca ten klucz. Na razie bez odczytu pliku oraz bez ograniczenia typów i rozmiaru
 - `GET /posts`, `GET /posts/:id` — odczyt postów
 - Asynchroniczny worker: po dodaniu posta liczy embedding (Ollama) i zapisuje wektor w Qdrant, zmienia status na `READY` (albo `FAILED` przy błędzie)
 - `POST /ask` — pytanie w naturalnym języku i email; zapisuje pytanie do MySQL ze statusem `PENDING` i zwraca od razu status `202` oraz `questionId`, przetwarzanie idzie asynchronicznie przez osobną kolejkę i workera. Agent ma do wyboru dwa narzędzia: `searchContent` (wyszukiwanie semantyczne — embedding pytania → Qdrant → treść z MySQL) do pytań o treść postów, oraz `queryPosts` (zapytanie do MySQL z filtrami `status`/`dateFrom`/`dateTo`, sortowaniem `orderBy` i `limit`) do pytań o metadane — liczby, zakresy dat, najnowszy/najstarszy post. Model sam decyduje, którego narzędzia użyć na podstawie pytania; gdy nie wywoła żadnego, stosowany jest deterministyczny fallback (wyszukiwanie semantyczne z surowym pytaniem użytkownika) — odpowiedź sklejona przez LLM na podstawie wyniku narzędzia. Model ma system prompt instruujący go do odpowiadania po polsku, liczenia zamiast opisywania przy pytaniach o liczbę oraz samodzielnego wyszukiwania najnowszego/najstarszego postu na podstawie danych. Odpowiedź jest zapisywana w bazie (przed wysyłką) i wysyłana mailem na podany adres (wersja tekstowa i HTML, treść w HTML jest escapowana). Status pytania przechodzi przez `PENDING` → `PROCESSING` → `READY` (albo `FAILED` przy błędzie przetwarzania lub nieudanej wysyłce maila)
@@ -30,7 +32,7 @@ Pełna specyfikacja docelowego zakresu znajduje się w pliku [`Wymagania.md`](Wy
 - Testy e2e (`api/test/posts.e2e-spec.ts`, `api/test/ask.e2e-spec.ts`, `api/test/questions.e2e-spec.ts`) i jednostkowe (`api/src/posts/posts.service.spec.ts`, `api/src/questions/questions.service.spec.ts`, `api/src/ask/ask.service.spec.ts`, `api/src/worker/posts-worker.controller.spec.ts`, `api/src/worker/ask-worker.controller.spec.ts`, `api/src/mail/mail.service.spec.ts`)
 - CI/CD (GitHub Actions): lint, build, testy jednostkowe przy każdym pushu/PR; jeśli testy przejdą na `master`, automatyczny deploy na serwer produkcyjny (SSH → `git pull` → `docker compose up -d --build`)
 
-**Jeszcze nie zaimplementowane** (patrz `Wymagania.md`): uploady plików (PDF/audio/obraz).
+**Jeszcze nie zaimplementowane** (patrz `Wymagania.md`): odczyt i ekstrakcja plików (PDF/audio/obraz).
 
 ## Demo na żywo
 

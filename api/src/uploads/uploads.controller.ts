@@ -14,8 +14,19 @@ import {
 } from '@nestjs/common';
 import { S3Service } from '../s3/s3.service';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiProperty,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { type Response } from 'express';
+
+class FileUploadDto {
+  @ApiProperty({ type: 'string', format: 'binary' })
+  file: any;
+}
 
 @Controller('uploads')
 export class UploadsController {
@@ -27,6 +38,10 @@ export class UploadsController {
     description:
       'Accepts a file as multipart/form-data under the "file" field and stores it in MinIO. Returns the storage key of the saved object.',
   })
+  @ApiBody({
+    type: FileUploadDto,
+  })
+  @ApiConsumes('multipart/form-data')
   @ApiResponse({ status: 201, description: 'File uploaded' })
   @ApiResponse({
     status: 400,

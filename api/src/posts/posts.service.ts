@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Post, PostStatus, Prisma } from '../generated/prisma/client';
 import { PostCreateDto } from './post.dto';
 import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
+import { PostContentType } from '../worker/post-payload.interface';
 
 export interface PostCreatedEvent {
   postId: number;
@@ -47,9 +48,11 @@ export class PostsService {
       data: postData,
     });
 
-    await this.rabbitMQService.sendToEmbeddingQueue('post.created', {
-      postId: post.id,
-    } as PostCreatedEvent);
+    if (data.contentType === PostContentType.TEXT_PLAIN) {
+      await this.rabbitMQService.sendToEmbeddingQueue('post.created', {
+        postId: post.id,
+      } as PostCreatedEvent);
+    }
 
     return post;
   }

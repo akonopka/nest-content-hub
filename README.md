@@ -35,17 +35,6 @@ Pełna specyfikacja docelowego zakresu znajduje się w pliku [`Wymagania.md`](Wy
 
 **Jeszcze nie zaimplementowane** (patrz `Wymagania.md`): ekstrakcja treści plików (PDF/audio/obraz) i ich indeksowanie w Qdrant.
 
-## Demo na żywo
-
-http://92.5.44.0:3000/api/docs — interaktywna dokumentacja (Swagger), stąd najwygodniej przetestować `/ask` i `/posts`
-
-API jest chronione przez HTTP Basic Auth (przeglądarka poprosi o dane logowania raz, przy pierwszym wejściu):
-
-```
-login: demo
-hasło: 7868b144b473
-```
-
 ## Uruchomienie
 
 ```bash

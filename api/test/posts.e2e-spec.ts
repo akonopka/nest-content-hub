@@ -6,6 +6,7 @@ import { AppModule } from './../src/app.module';
 import { PostStatus } from '../src/generated/prisma/enums';
 import { RabbitMQService } from '../src/rabbitmq/rabbitmq.service';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { PostContentType } from '../src/worker/post-payload.interface';
 
 describe('Posts (e2e)', () => {
   let app: INestApplication<App>;
@@ -42,7 +43,7 @@ describe('Posts (e2e)', () => {
     const createdPost = {
       id: 1,
       content: 'testowy post e2e',
-      content_type: 'text/plain',
+      content_type: PostContentType.TEXT_PLAIN,
       status: PostStatus.PENDING,
       email: 'someone@example.com',
       file_path: null,
@@ -55,7 +56,11 @@ describe('Posts (e2e)', () => {
     const postsPostResponse = await server
       .post('/posts')
       .auth(process.env.AUTH_LOGIN!, process.env.AUTH_PASS!)
-      .send({ content: createdPost.content, email: createdPost.email })
+      .send({
+        content: createdPost.content,
+        contentType: PostContentType.TEXT_PLAIN,
+        email: createdPost.email,
+      })
       .expect(201);
 
     const postsPostResponseBody = postsPostResponse.body;
@@ -76,6 +81,7 @@ describe('Posts (e2e)', () => {
         content: createdPost.content,
         email: createdPost.email,
         content_type: createdPost.content_type,
+        file_path: undefined,
       },
     });
 

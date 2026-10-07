@@ -13,6 +13,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { S3Service } from '../s3/s3.service';
+import { PostsService } from '../posts/posts.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBody,
@@ -24,13 +25,20 @@ import {
 import { type Response } from 'express';
 
 class FileUploadDto {
-  @ApiProperty({ type: 'string', format: 'binary' })
+  @ApiProperty({
+    type: 'string',
+    format: 'binary',
+    description: 'Image file to upload (PNG or JPEG, up to 20 MB)',
+  })
   file: any;
 }
 
 @Controller('uploads')
 export class UploadsController {
-  constructor(private s3Service: S3Service) {}
+  constructor(
+    private s3Service: S3Service,
+    private postsService: PostsService,
+  ) {}
 
   @Post()
   @ApiOperation({
@@ -66,6 +74,10 @@ export class UploadsController {
     const mimetype = file.mimetype;
 
     const key = await this.s3Service.saveFile(buffer, mimetype);
+    await this.postsService.create({
+      filePath: key,
+      contentType: mimetype,
+    });
 
     return { key };
   }

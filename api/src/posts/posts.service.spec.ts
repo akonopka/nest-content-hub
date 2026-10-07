@@ -3,6 +3,7 @@ import { PostsService } from './posts.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
 import { PostStatus } from '../generated/prisma/enums';
+import { PostContentType } from '../worker/post-payload.interface';
 
 describe('PostsService', () => {
   let postsService: PostsService;
@@ -41,7 +42,12 @@ describe('PostsService', () => {
 
   it('returns a post by id', async () => {
     const postId = 1;
-    const foundPost = { id: postId, content: 'test', email: null };
+    const foundPost = {
+      id: postId,
+      content: 'test',
+      contentType: PostContentType.TEXT_PLAIN,
+      email: null,
+    };
     prismaService.post.findUnique.mockResolvedValue(foundPost);
 
     const result = await postsService.findOne(postId);
@@ -54,16 +60,23 @@ describe('PostsService', () => {
   });
 
   it('creates a post and emits an event to the queue', async () => {
-    const createdPost = { id: 1, content: 'test' };
+    const createdPost = {
+      id: 1,
+      content: 'test',
+      contentType: PostContentType.TEXT_PLAIN,
+    };
     prismaService.post.create.mockResolvedValue(createdPost);
 
-    const result = await postsService.create({ content: 'test' });
+    const result = await postsService.create({
+      content: 'test',
+      contentType: PostContentType.TEXT_PLAIN,
+    });
 
     expect(prismaService.post.create).toHaveBeenCalledWith({
       data: {
         content: createdPost.content,
-        email: undefined,
-        content_type: 'text/plain',
+        content_type: PostContentType.TEXT_PLAIN,
+        file_path: undefined,
       },
     });
     expect(rabbitMQService.sendToEmbeddingQueue).toHaveBeenCalledWith(
@@ -88,8 +101,18 @@ describe('PostsService', () => {
 
   it('finds posts by ids', async () => {
     const foundPosts = [
-      { id: 1, content: 'test1', email: 'someone@example1.com' },
-      { id: 2, content: 'test2', email: 'someoneelse@exammple2.com' },
+      {
+        id: 1,
+        content: 'test1',
+        contentType: PostContentType.TEXT_PLAIN,
+        email: 'someone@example1.com',
+      },
+      {
+        id: 2,
+        content: 'test2',
+        contentType: PostContentType.TEXT_PLAIN,
+        email: 'someoneelse@exammple2.com',
+      },
     ];
     const foundPostsIds = foundPosts.map((foundPost) => foundPost.id);
 

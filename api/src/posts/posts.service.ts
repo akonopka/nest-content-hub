@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Global, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Post, PostStatus, Prisma } from '../generated/prisma/client';
 import { PostCreateDto } from './post.dto';
@@ -15,6 +15,7 @@ export const OrderPostsBy = {
 
 export type OrderPostsBy = (typeof OrderPostsBy)[keyof typeof OrderPostsBy];
 
+@Global()
 @Injectable()
 export class PostsService {
   constructor(
@@ -38,7 +39,8 @@ export class PostsService {
     const postData = {
       content: data.content,
       email: data.email,
-      content_type: 'text/plain',
+      content_type: data.contentType,
+      file_path: data.filePath,
     };
 
     const post = await this.prismaService.post.create({

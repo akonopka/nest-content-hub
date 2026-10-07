@@ -22,6 +22,9 @@ export interface ExtractionMethod {
 
 export enum PostContentType {
   TEXT_PLAIN = 'text/plain',
+  IMAGE_JPEG = 'image/jpeg',
+  IMAGE_PNG = 'image/png',
+  APPLICATION_OCTET_STREAM = 'application/octet-stream',
 }
 
 export interface PostPayload {

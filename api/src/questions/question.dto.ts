@@ -20,7 +20,7 @@ export class QuestionCreateDto {
   email: string;
 }
 
-export class QuestionGetDto {
+export class QuestionGetResponseDto {
   @ApiProperty({ example: 1, description: 'Question id' })
   id: number;
 

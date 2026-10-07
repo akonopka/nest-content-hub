@@ -20,7 +20,7 @@ Pełna specyfikacja docelowego zakresu znajduje się w pliku [`Wymagania.md`](Wy
 ## Co obecnie działa
 
 - `POST /posts` — dodanie treści tekstowej, zapis do MySQL ze statusem `PENDING`
-- `POST /uploads` — przyjmuje plik (multipart, pole `file`) i zapisuje go do MinIO pod losowym kluczem (UUID), zwraca ten klucz. Walidacja: tylko `image/png`/`image/jpeg` (sprawdzane po zawartości pliku, nie po rozszerzeniu) i maksymalnie 20 MB
+- `POST /uploads` — przyjmuje plik (multipart, pole `file`) i opcjonalny `email`, zapisuje plik do MinIO pod losowym kluczem (UUID) i tworzy rekord `Post` (status `pending`, `content_type` z MIME pliku, `file_path` = klucz), zwraca klucz. Walidacja: tylko `image/png`/`image/jpeg` (sprawdzane po zawartości pliku, nie po rozszerzeniu) i maksymalnie 20 MB (konfigurowalne przez `MAX_UPLOAD_FILE_SIZE_MB`)
 - `GET /uploads/:key` — odczyt pliku z MinIO po kluczu, z oryginalnym `Content-Type`; nieistniejący klucz daje `404`
 - `GET /posts`, `GET /posts/:id` — odczyt postów
 - Asynchroniczny worker: po dodaniu posta liczy embedding (Ollama) i zapisuje wektor w Qdrant, zmienia status na `READY` (albo `FAILED` przy błędzie)
@@ -33,7 +33,7 @@ Pełna specyfikacja docelowego zakresu znajduje się w pliku [`Wymagania.md`](Wy
 - Testy e2e (`api/test/posts.e2e-spec.ts`, `api/test/ask.e2e-spec.ts`, `api/test/questions.e2e-spec.ts`) i jednostkowe (`api/src/posts/posts.service.spec.ts`, `api/src/questions/questions.service.spec.ts`, `api/src/ask/ask.service.spec.ts`, `api/src/worker/posts-worker.controller.spec.ts`, `api/src/worker/ask-worker.controller.spec.ts`, `api/src/mail/mail.service.spec.ts`)
 - CI/CD (GitHub Actions): lint, build, testy jednostkowe przy każdym pushu/PR; jeśli testy przejdą na `master`, automatyczny deploy na serwer produkcyjny (SSH → `git pull` → `docker compose up -d --build`)
 
-**Jeszcze nie zaimplementowane** (patrz `Wymagania.md`): zapis postu (status `pending`, `content_type`, `file_path`) przy uploadzie oraz ekstrakcja treści plików (PDF/audio/obraz).
+**Jeszcze nie zaimplementowane** (patrz `Wymagania.md`): ekstrakcja treści plików (PDF/audio/obraz) i ich indeksowanie w Qdrant.
 
 ## Demo na żywo
 
@@ -67,7 +67,7 @@ Interaktywna dokumentacja OpenAPI: `http://localhost:3000/api/docs`
 # dodanie posta tekstowego
 curl -X POST http://localhost:3000/posts \
   -H "Content-Type: application/json" \
-  -d '{"content": "Przykładowa treść do zaindeksowania."}'
+  -d '{"content": "Przykładowa treść do zaindeksowania.", "contentType": "text/plain"}'
 
 # lista postów
 curl http://localhost:3000/posts

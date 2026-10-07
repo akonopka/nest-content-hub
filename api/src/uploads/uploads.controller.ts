@@ -1,7 +1,10 @@
 import {
   Controller,
+  FileTypeValidator,
   Get,
+  MaxFileSizeValidator,
   Param,
+  ParseFilePipe,
   ParseUUIDPipe,
   Post,
   Res,
@@ -25,8 +28,22 @@ export class UploadsController {
       'Accepts a file as multipart/form-data under the "file" field and stores it in MinIO. Returns the storage key of the saved object.',
   })
   @ApiResponse({ status: 201, description: 'File uploaded' })
+  @ApiResponse({
+    status: 400,
+    description: 'File is too large or has an unsupported type',
+  })
   @UseInterceptors(FileInterceptor('file'))
-  async upload(@UploadedFile() file: Express.Multer.File) {
+  async upload(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 20 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: /^image\/(png|jpeg)$/ }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
     const buffer = file.buffer;
     const mimetype = file.mimetype;
 

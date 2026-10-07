@@ -1,12 +1,18 @@
 import {
   Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
   Post,
+  Res,
+  StreamableFile,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { S3Service } from '../s3/s3.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { type Response } from 'express';
 
 @Controller('uploads')
 export class UploadsController {
@@ -27,5 +33,31 @@ export class UploadsController {
     const key = await this.s3Service.saveFile(buffer, mimetype);
 
     return { key };
+  }
+
+  @Get(':key')
+  @ApiOperation({
+    summary: 'Download an uploaded file',
+    description:
+      'Returns the file previously stored under this key by POST /uploads, with its original Content-Type.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'File found and returned',
+    schema: { type: 'string', format: 'binary' },
+  })
+  @ApiResponse({ status: 400, description: 'Key is not a valid UUID' })
+  @ApiResponse({ status: 404, description: 'File not found' })
+  async get(
+    @Param('key', ParseUUIDPipe) key: string,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    const response = await this.s3Service.getFile(key);
+    const buffer = response.buffer;
+    const mimeType = response.mimeType;
+
+    res.set('Content-Type', mimeType);
+
+    return new StreamableFile(buffer);
   }
 }

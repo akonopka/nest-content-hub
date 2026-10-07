@@ -1,9 +1,17 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  OnModuleInit,
+} from '@nestjs/common';
 import {
   PutObjectCommand,
   HeadBucketCommand,
   CreateBucketCommand,
+  GetObjectCommand,
   S3Client,
+  NoSuchKey,
+  GetObjectCommandOutput,
 } from '@aws-sdk/client-s3';
 
 @Injectable()
@@ -77,5 +85,40 @@ export class S3Service implements OnModuleInit {
     await this.client.send(putObjectCommand);
 
     return key;
+  }
+
+  async getFile(key: string): Promise<{ buffer: Buffer; mimeType: string }> {
+    const input = {
+      Bucket: process.env.MINIO_BUCKET!,
+      Key: key,
+    };
+
+    const getObjectCommand = new GetObjectCommand(input);
+    let response: GetObjectCommandOutput;
+
+    try {
+      response = await this.client.send(getObjectCommand);
+    } catch (error) {
+      if (error instanceof NoSuchKey) {
+        throw new NotFoundException();
+      }
+      throw error;
+    }
+
+    const body = response.Body;
+    let mimeType = response.ContentType;
+
+    if (!body) {
+      throw new Error(`Empty response body for key ${key}`);
+    }
+
+    if (!mimeType) {
+      mimeType = 'application/octet-stream';
+    }
+
+    const bytes = await body.transformToByteArray();
+    const buffer = Buffer.from(bytes);
+
+    return { buffer, mimeType };
   }
 }

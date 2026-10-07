@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   FileTypeValidator,
   Get,
@@ -19,19 +20,10 @@ import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
-  ApiProperty,
   ApiResponse,
 } from '@nestjs/swagger';
 import { type Response } from 'express';
-
-class FileUploadDto {
-  @ApiProperty({
-    type: 'string',
-    format: 'binary',
-    description: 'Image file to upload (PNG or JPEG, up to 20 MB)',
-  })
-  file: any;
-}
+import { UploadCreateDto, UploadCreateResponseDto } from './uploads.dto';
 
 @Controller('uploads')
 export class UploadsController {
@@ -47,14 +39,19 @@ export class UploadsController {
       'Accepts a file as multipart/form-data under the "file" field and stores it in MinIO. Returns the storage key of the saved object.',
   })
   @ApiBody({
-    type: FileUploadDto,
+    type: UploadCreateDto,
   })
   @ApiConsumes('multipart/form-data')
-  @ApiResponse({ status: 201, description: 'File uploaded' })
+  @ApiResponse({
+    status: 201,
+    description: 'File uploaded',
+    type: UploadCreateResponseDto,
+  })
   @ApiResponse({
     status: 400,
     description: 'File is too large or has an unsupported type',
   })
+  @ApiResponse({ status: 400, description: 'Invalid email' })
   @UseInterceptors(FileInterceptor('file'))
   async upload(
     @UploadedFile(
@@ -69,6 +66,7 @@ export class UploadsController {
       }),
     )
     file: Express.Multer.File,
+    @Body() dto: UploadCreateDto,
   ) {
     const buffer = file.buffer;
     const mimetype = file.mimetype;
@@ -77,6 +75,7 @@ export class UploadsController {
     await this.postsService.create({
       filePath: key,
       contentType: mimetype,
+      email: dto.email,
     });
 
     return { key };

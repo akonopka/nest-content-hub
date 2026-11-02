@@ -170,6 +170,7 @@ services:
   whisper:
     container_name: nest-content-hub-whisper
     image: "hwdsl2/whisper-server"
+    profiles: ["test"]
     environment:
       WHISPER_MODEL: "${WHISPER_MODEL:-base}"
     ports:

@@ -57,6 +57,15 @@ Pierwsze uruchomienie potrwa dłużej — Ollama ściąga modele, `init` robi mi
 
 API dostępne pod `http://localhost:3000` (port konfigurowalny przez `API_PORT` w `.env`).
 
+### Obraz MinIO
+
+Obraz `minio/minio` nie jest już publikowany na Docker Hubie, więc `docker compose up -d` nie ściągnie go na świeżej maszynie. Domyślnie używana jest ostatnia wolna wersja (`RELEASE.2025-09-07T16-13-09Z`). Są dwa obejścia:
+
+- **ARM64** (np. Mac z procesorem M, serwer Oracle): ustaw w `.env` `MINIO_IMAGE=mikrotik/minio`. To nieoficjalny mirror, o nieznanym pochodzeniu.
+- **amd64**: wczytaj obraz z własnego archiwum zapisanego wcześniej przez `docker save minio/minio:RELEASE.2025-09-07T16-13-09Z -o minio.tar.gz`, a potem `docker load -i minio.tar.gz`.
+
+Ta wersja MinIO ma znaną podatność w autoryzacji, więc w `docker-compose.yml` jej porty są przypięte do `127.0.0.1`. Docelowo magazyn warto zastąpić aktywnie rozwijanym (np. Garage) albo AWS S3.
+
 ## Dokumentacja API
 
 Interaktywna dokumentacja OpenAPI: `http://localhost:3000/api/docs`

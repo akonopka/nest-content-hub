@@ -181,7 +181,7 @@ services:
 
   mailhog:
     container_name: nest-content-hub-mailhog
-    image: "mailhog/mailhog:${MAILHOG_VERSION:-v1.0.1}"
+    image: "axllent/mailpit:${MAILPIT_VERSION:-v1.33.0}"
     ports:
       - "127.0.0.1:${MAILHOG_UI_PORT:-8025}:8025"
       - "127.0.0.1:${MAILHOG_SMTP_PORT:-1025}:1025"

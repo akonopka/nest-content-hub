@@ -78,7 +78,7 @@ services:
       MYSQL_PASSWORD: "${MYSQL_PASSWORD:-password}"
       MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-root_password}"
     ports:
-      - "${MYSQL_PORT:-3306}:3306"
+      - "127.0.0.1:${MYSQL_PORT:-3306}:3306"
     volumes:
       - ./mysql:/var/lib/mysql
     healthcheck:
@@ -102,7 +102,7 @@ services:
     image: "adminer:${ADMINER_VERSION:-6.0.1}"
     restart: always
     ports:
-      - "${ADMINER_PORT:-8080}:8080"
+      - "127.0.0.1:${ADMINER_PORT:-8080}:8080"
     depends_on:
       mysql:
         condition: service_healthy
@@ -116,8 +116,8 @@ services:
       MINIO_ROOT_USER: "${MINIO_ROOT_USER:-minioadmin}"
       MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:-minioadmin}"
     ports:
-      - "${MINIO_API_PORT:-9000}:9000"
-      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+      - "127.0.0.1:${MINIO_API_PORT:-9000}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"
     volumes:
       - ./minio:/data
 
@@ -129,14 +129,14 @@ services:
       SERVICES: "s3"
       LOCALSTACK_AUTH_TOKEN: "${LOCALSTACK_AUTH_TOKEN}"
     ports:
-      - "4566:4566"
+      - "127.0.0.1:4566:4566"
 
   rabbitmq:
     container_name: nest-content-hub-rabbitmq
     image: "rabbitmq:${RABBITMQ_VERSION:-3-management}"
     ports:
-      - "${RABBITMQ_UI_PORT:-15672}:15672"
-      - "${RABBITMQ_AMPQ_PORT:-5672}:5672"
+      - "127.0.0.1:${RABBITMQ_UI_PORT:-15672}:15672"
+      - "127.0.0.1:${RABBITMQ_AMPQ_PORT:-5672}:5672"
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
@@ -157,7 +157,7 @@ services:
       OLLAMA_CHAT_MODEL: "${OLLAMA_CHAT_MODEL:-qwen2.5:3b}"
       OLLAMA_VISION_MODEL: "${OLLAMA_VISION_MODEL:-moondream}"
     ports:
-      - "${OLLAMA_PORT:-3006}:11434"
+      - "127.0.0.1:${OLLAMA_PORT:-3006}:11434"
     volumes:
       - ./ollama/.ollama:/root/.ollama
     restart: always
@@ -174,7 +174,7 @@ services:
     environment:
       WHISPER_MODEL: "${WHISPER_MODEL:-base}"
     ports:
-      - "${WHISPER_PORT:-9002}:9000"
+      - "127.0.0.1:${WHISPER_PORT:-9002}:9000"
     volumes:
       - ./whisper:/var/lib/whisper
     restart: always
@@ -183,8 +183,8 @@ services:
     container_name: nest-content-hub-qdrant
     image: "qdrant/qdrant:${QDRANT_VERSION:-v1.19}"
     ports:
-      - "${QDRANT_REST_PORT:-6333}:6333"
-      - "${QDRANT_GRPC_PORT:-6334}:6334"
+      - "127.0.0.1:${QDRANT_REST_PORT:-6333}:6333"
+      - "127.0.0.1:${QDRANT_GRPC_PORT:-6334}:6334"
     volumes:
       - ./qdrant/storage:/qdrant/storage
     restart: always
@@ -193,6 +193,6 @@ services:
     container_name: nest-content-hub-mailhog
     image: "mailhog/mailhog:${MAILHOG_VERSION:-v1.0.1}"
     ports:
-      - "${MAILHOG_UI_PORT:-8025}:8025"
-      - "${MAILHOG_SMTP_PORT:-1025}:1025"
+      - "127.0.0.1:${MAILHOG_UI_PORT:-8025}:8025"
+      - "127.0.0.1:${MAILHOG_SMTP_PORT:-1025}:1025"
     restart: always

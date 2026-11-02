@@ -4,7 +4,7 @@
 
 Proof of Concept (PoC) aplikacji typu content hub z wbudowanym asystentem AI.
 
-Użytkownik dodaje treści czterech typów: dane tekstowe, pliki PDF, pliki audio i obrazy. Z każdej z nich powstaje post — aplikacja automatycznie wyciąga z treści tekst lub opis (w zależności od typu treści) i liczy dla niego embedding, opcjonalnie powiadamiając mailem, gdy przetwarzanie się zakończy.
+Użytkownik dodaje treści dwóch typów: dane tekstowe i obrazy. Z każdej z nich powstaje post — aplikacja automatycznie przygotowuje tekst lub opis (w zależności od typu treści) i liczy dla niego embedding, opcjonalnie powiadamiając mailem, gdy przetwarzanie się zakończy.
 
 Użytkownik zadaje pytanie o zapisane posty w języku naturalnym, a agent AI sam dobiera narzędzie potrzebne do odpowiedzi — wyszukiwanie semantyczne lub zapytanie strukturalne do bazy — po czym zawsze wysyła odpowiedź mailem.
 
@@ -21,20 +21,17 @@ Rozwiązanie w pełni oparte na kontenerach. Po `docker compose up -d` całe śr
 * **Qdrant:** przechowywanie embeddingów
 * **RabbitMQ:** broker kolejki
 * **Ollama:** lokalny silnik do generowania embeddingów, rozmów z agentem oraz opisywania obrazów (model wizyjny)
-* **Whisper:** lokalna transkrypcja audio na tekst
-* **MinIO:** object storage kompatybilny z S3, do przechowywania wgranych plików (pliki PDF, pliki audio, obrazy)
+* **MinIO:** object storage kompatybilny z S3, do przechowywania wgranych plików (obrazy)
 * **MailHog:** serwer przechwytujący e-maile, do testowania wysyłki odpowiedzi agenta oraz powiadomień o zakończonym embeddingu na adres e-mail wskazany przez użytkownika
 
 ## Logika aplikacji
 
 ### Dodawanie treści
 
-API udostępnia endpointy przyjmujące cztery rodzaje wejścia. Każdy przyjmuje opcjonalne pole `email` — jeśli podane, worker po zakończeniu przetwarzania (status `ready` albo `failed`) wysyła powiadomienie na ten adres, przechwycone przez MailHog:
+API udostępnia endpointy przyjmujące dwa rodzaje wejścia. Każdy przyjmuje opcjonalne pole `email` — jeśli podane, worker po zakończeniu przetwarzania (status `ready` albo `failed`) wysyła powiadomienie na ten adres, przechwycone przez MailHog:
 
 * `POST /posts` — treść tekstowa wprost w body (JSON), zapisywana do MySQL ze statusem `pending`; krok ekstrakcji jest pomijany (tekst już jest gotowy), do kolejki trafia od razu zadanie dotyczące embeddingu.
-* `POST /uploads` (PDF) — plik trafia do MinIO, rekord w MySQL dostaje status `pending`, do kolejki trafia zadanie dotyczące ekstrakcji tekstu ze stron.
-* `POST /uploads` (audio) — analogicznie, do kolejki trafia zadanie dotyczące transkrypcji audio przez Whisper.
-* `POST /uploads` (obraz) — analogicznie, do kolejki trafia zadanie dotyczące opisu obrazu przez model wizyjny w Ollamie.
+* `POST /uploads` (obraz) — plik trafia do MinIO, rekord w MySQL dostaje status `pending`, do kolejki trafia zadanie dotyczące opisu obrazu przez model wizyjny w Ollamie.
 
 Każdy rekord treści ma status (`pending` → `processing` → `ready` / `failed`), widoczny przez `GET /posts/:id`.
 
@@ -42,29 +39,16 @@ Każdy rekord treści ma status (`pending` → `processing` → `ready` / `faile
 
 * Worker ekstrakcji:
 
-  * PDF → tekst wyciągany osobno dla każdej strony (np. `pdfjs-dist`); tekst każdej strony staje się od razu osobnym chunkiem (bez dodatkowego dzielenia)
-  * Audio → transkrypcja przez Whisper, tekst dzielony na chunki tak jak zwykły tekst
-  * Obraz → opis/OCR przez model wizyjny w Ollamie; wynik dzielony na chunki tak jak zwykły tekst
+  * Obraz → opis przez model wizyjny w Ollamie; opis jest krótki, więc stanowi jeden chunk
   * Po sukcesie aktualizuje rekord w MySQL i dodaje do kolejki zadanie dotyczące embeddingu.
-* Worker embeddingu: liczy embedding dla każdego chunku i zapisuje odpowiedni punkt w Qdrant; po zapisaniu wszystkich chunków dla treści posta zmienia jego status w MySQL na `ready`. Payload zawiera `post_id`, `chunk_index`, `content_type` (MIME), `embedding_method` (jakiego modelu użyto do wyliczenia embeddingu) oraz `extraction_method` (jaką metodą wyekstrahowano treść danego chunku — biblioteka albo model AI). Przykłady:
+* Worker embeddingu: liczy embedding dla każdego chunku i zapisuje odpowiedni punkt w Qdrant; po zapisaniu wszystkich chunków dla treści posta zmienia jego status w MySQL na `ready`. Payload zawiera `post_id`, `chunk_index`, `content_type` (MIME), `embedding_method` (jakiego modelu użyto do wyliczenia embeddingu) oraz `extraction_method` (jaką metodą wyekstrahowano treść: dla obrazu model AI). Przykład:
 
   ```json
-  // PDF
-  {
-    "post_id": 123,
-    "chunk_index": 0,
-    "content_type": "application/pdf",
-    "embedding_method": { "provider": "ollama", "model": "nomic-embed-text" },
-    "extraction_method": { "type": "node_library", "details": { "name": "pdfjs-dist" } }
-  }
-  ```
-
-  ```json
-  // audio / obraz
+  // obraz
   {
     "post_id": 456,
-    "chunk_index": 2,
-    "content_type": "audio/mpeg",
+    "chunk_index": 0,
+    "content_type": "image/png",
     "embedding_method": { "provider": "ollama", "model": "nomic-embed-text" },
     "extraction_method": { "type": "llm", "details": { "provider": "ollama", "model": "moondream" } }
   }
@@ -83,7 +67,7 @@ Request od razu zwraca `202` z `{ "status": "pending" }` — dalsze przetwarzani
 
 Zakolejkowane zadanie trafia do Agenta AI połączonego z Ollamą, który samodzielnie dobiera narzędzie (tool/function calling) w zależności od charakteru pytania:
 
-* **`search_content`** — wyszukiwanie semantyczne: liczy embedding zapytania, wykonuje wyszukiwanie wg podobieństwa w Qdrant, odrzucając wyniki poniżej progu podobieństwa, z pozostałych bierze identyfikatory postów (`post_id`) i dociąga pełną treść postów z MySQL. Jeśli żaden wynik nie przekroczy progu, narzędzie zwraca agentowi pustą listę, a agent w swojej ostatecznej odpowiedzi (wysyłanej potem mailem) informuje użytkownika, że nie znalazł pasującej treści. Używane dla pytań o treść postów — zarówno podaną wprost dla postów tekstowych, jak i wyciągniętą z PDF, audio czy obrazu ("co było powiedziane o...", "na którym zdjęciu jest...").
+* **`search_content`** — wyszukiwanie semantyczne: liczy embedding zapytania, wykonuje wyszukiwanie wg podobieństwa w Qdrant, odrzucając wyniki poniżej progu podobieństwa, z pozostałych bierze identyfikatory postów (`post_id`) i dociąga pełną treść postów z MySQL. Jeśli żaden wynik nie przekroczy progu, narzędzie zwraca agentowi pustą listę, a agent w swojej ostatecznej odpowiedzi (wysyłanej potem mailem) informuje użytkownika, że nie znalazł pasującej treści. Używane dla pytań o treść postów — zarówno podaną wprost dla postów tekstowych, jak i opis obrazu ("na którym zdjęciu jest...").
 * **`query_posts`** — zapytanie strukturalne: wykonuje zapytanie SQL bezpośrednio do MySQL, filtrując po id/typie/dacie/statusie. Używane dla pytań ilościowych/faktograficznych ("ile mam plików audio", "jakie posty dodano w tym tygodniu").
 * **`send_email_report`** — wysyła gotową odpowiedź na podany adres e-mail. Wiadomość przechwytywana jest przez MailHog.
 
@@ -95,8 +79,8 @@ Repozytorium zawiera seed (kilka przykładowych postów tekstowych), żeby agent
 
 ## Kryteria akceptacji (DoD)
 
-* `docker compose up -d` podnosi w pełni działające kontenery z API, MySQL, MinIO, RabbitMQ, Ollamą, Whisper, Qdrant i MailHog.
-* Dodanie treści dowolnego typu (tekst/PDF/audio/obraz) tworzy post ze statusem `pending`, który bez ręcznej ingerencji zmienia się na `ready`, a jego treść staje się dostępna dla agenta w `/ask`.
+* `docker compose up -d` podnosi w pełni działające kontenery z API, MySQL, MinIO, RabbitMQ, Ollamą, Qdrant i MailHog.
+* Dodanie treści dowolnego typu (tekst/obraz) tworzy post ze statusem `pending`, który bez ręcznej ingerencji zmienia się na `ready`, a jego treść staje się dostępna dla agenta w `/ask`.
 * Podanie pola `email` przy dodawaniu treści skutkuje powiadomieniem mailowym (przechwyconym przez MailHog) po zmianie statusu posta z `pending` na `ready` lub `failed`.
 * `POST /ask` zwraca `202` natychmiast, a właściwa odpowiedź agenta (dobierającego semantyczne lub strukturalne narzędzie do charakteru pytania) trafia mailem, przechwyconym przez MailHog, na adres podany w requeście.
 * API udostępnia dokumentację OpenAPI pod `/api/docs`.

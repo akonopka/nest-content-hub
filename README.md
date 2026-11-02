@@ -4,7 +4,7 @@
 
 Content hub z asystentem AI: przyjmuje treści, liczy dla nich embeddingi lokalnym modelem (Ollama) i zapisuje je w bazie wektorowej (Qdrant), żeby można było je potem przeszukiwać semantycznie.
 
-Pełna specyfikacja docelowego zakresu znajduje się w pliku [`Wymagania.md`](Wymagania.md). Bieżący plik opisuje **stan faktyczny** projektu — co już działa.
+Specyfikacja zakresu PoC znajduje się w pliku [`Wymagania.md`](Wymagania.md). Bieżący plik opisuje **stan faktyczny** projektu — co już działa.
 
 ## Stack
 
@@ -27,14 +27,25 @@ Pełna specyfikacja docelowego zakresu znajduje się w pliku [`Wymagania.md`](Wy
 - `POST /ask` — pytanie w naturalnym języku i email; zapisuje pytanie do MySQL ze statusem `PENDING` i zwraca od razu status `202` oraz `questionId`, przetwarzanie idzie asynchronicznie przez osobną kolejkę i workera. Agent ma do wyboru dwa narzędzia: `searchContent` (wyszukiwanie semantyczne — embedding pytania → Qdrant → treść z MySQL) do pytań o treść postów, oraz `queryPosts` (zapytanie do MySQL z filtrami `status`/`dateFrom`/`dateTo`, sortowaniem `orderBy` i `limit`) do pytań o metadane — liczby, zakresy dat, najnowszy/najstarszy post. Model sam decyduje, którego narzędzia użyć na podstawie pytania; gdy nie wywoła żadnego, stosowany jest deterministyczny fallback (wyszukiwanie semantyczne z surowym pytaniem użytkownika) — odpowiedź sklejona przez LLM na podstawie wyniku narzędzia. Model ma system prompt instruujący go do odpowiadania po polsku, liczenia zamiast opisywania przy pytaniach o liczbę oraz samodzielnego wyszukiwania najnowszego/najstarszego postu na podstawie danych. Odpowiedź jest zapisywana w bazie (przed wysyłką) i wysyłana mailem na podany adres (wersja tekstowa i HTML, treść w HTML jest escapowana). Status pytania przechodzi przez `PENDING` → `PROCESSING` → `READY` (albo `FAILED` przy błędzie przetwarzania lub nieudanej wysyłce maila)
 - `GET /questions/:id` — status pytania i odpowiedź (`id`, `question`, `status`, `answer`; `answer` jest `null`, dopóki pytanie nie ma statusu `READY`). Celowo bez adresu e-mail w odpowiedzi
 - Rate limiting (`@nestjs/throttler`): globalnie 10 żądań/minutę na adres IP, a `POST /ask` dodatkowo zawężone do 10 żądań/10 minut (najdroższy endpoint — uruchamia model i wysyła mail)
-- Całe API chronione przez HTTP Basic Auth (dane logowania w sekcji "Demo na żywo" niżej)
+- Całe API chronione przez HTTP Basic Auth
 - Seed danych startowych przy pierwszym uruchomieniu — dodane posty też przechodzą przez pełny pipeline (kolejka → embedding → Qdrant), tak samo jak posty dodane przez `POST /posts`
 - Dokumentacja OpenAPI pod `/api/docs` (generowana automatycznie przy starcie)
 - Testy e2e (`api/test/posts.e2e-spec.ts`, `api/test/ask.e2e-spec.ts`, `api/test/questions.e2e-spec.ts`) i jednostkowe (`api/src/posts/posts.service.spec.ts`, `api/src/questions/questions.service.spec.ts`, `api/src/ask/ask.service.spec.ts`, `api/src/worker/posts-worker.controller.spec.ts`, `api/src/worker/ask-worker.controller.spec.ts`, `api/src/mail/mail.service.spec.ts`)
 - CI/CD (GitHub Actions): lint, build, testy jednostkowe przy każdym pushu/PR; jeśli testy przejdą na `master`, automatyczny deploy na serwer produkcyjny (SSH → `git pull` → `docker compose up -d --build`)
 
-**Jeszcze nie zaimplementowane** (patrz `Wymagania.md`): ekstrakcja treści plików (PDF/audio/obraz) i ich indeksowanie w Qdrant.
+## Status projektu
 
+Zakres PoC: treści tekstowe i obrazy, przetwarzane asynchronicznie przez kolejki, agent AI z tool calling (wyszukiwanie semantyczne + zapytania do bazy), testy jednostkowe i e2e oraz CI/CD z automatycznym wdrożeniem.
+
+Do dokończenia: opis obrazu przez model wizyjny (moondream) i indeksowanie go w Qdrant. Na razie upload obrazu zapisuje plik w MinIO i rekord w MySQL.
+
+## Możliwe kierunki rozwoju
+
+Pomysły na dalszą rozbudowę, niewymagane do działania obecnej wersji:
+
+- PDF: ekstrakcja tekstu z warstwy tekstowej i chunkowanie (jeden post jako wiele punktów w Qdrant); dla skanów dodatkowo OCR
+- audio: transkrypcja przez Whisper (kontener jest już w `docker-compose.yml` pod profilem `test`)
+- pętla agenta z wieloma rundami wywołań narzędzi
 ## Uruchomienie
 
 ```bash

@@ -13,8 +13,6 @@
 
 # editor
 /.vscode
-terraform/.terraform/
-terraform/*.tfstate*
 
 # AI assistant tooling
 /api/.agents/

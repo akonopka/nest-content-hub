@@ -21,3 +21,6 @@ terraform/*.tfstate*
 /api/.claude/
 /api/.windsurf/
 /api/skills-lock.json
+
+# private notes and plans
+/priv/

@@ -22,3 +22,6 @@
 
 # private notes and plans
 /priv/
+
+# production compose file, kept only on the server
+/docker-compose.oracle.yml

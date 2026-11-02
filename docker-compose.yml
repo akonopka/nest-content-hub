@@ -123,7 +123,7 @@ services:
 
   localstack:
     container_name: nest-content-hub-localstack
-    image: "localstack/localstack:latest"
+    image: "localstack/localstack:${LOCALSTACK_VERSION:-2026.10}"
     profiles: ["test"]
     environment:
       SERVICES: "s3"

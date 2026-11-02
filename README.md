@@ -14,7 +14,7 @@ Specyfikacja zakresu PoC znajduje się w pliku [`Wymagania.md`](Wymagania.md). B
 - **Ollama** — lokalny model do liczenia embeddingów
 - **Qdrant** — baza wektorowa
 - **MinIO** (API kompatybilne z S3) — magazyn uploadów, konsola pod `http://localhost:9001`
-- **MailHog** + `nodemailer` — wysyłka odpowiedzi mailem (podgląd wiadomości pod `http://localhost:8025`)
+- **Mailpit** + `nodemailer` — wysyłka odpowiedzi mailem (podgląd wiadomości pod `http://localhost:8025`)
 - Docker Compose — całe środowisko
 
 ## Co obecnie działa
